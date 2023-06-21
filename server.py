@@ -45,7 +45,6 @@ async def get_all_urls():
 async def get_url(alias: str):
 
     url_output = sqlite_helpers.get_url("urldatabase.db", alias)
-    print("url output is ", url_output)
     if url_output is None:
         raise HTTPException(status_code=404, detail="URL not found.")
     
@@ -124,9 +123,4 @@ def generate_alias():
     charOptions = string.ascii_letters + string.digits #lowercase, uppercase, and numbers
     aliasID = ''.join(random.choices(charOptions, k=idLength))
     return aliasID
-
-def drop_table():
-    db = sqlite3.connect("urldatabase.db")
-    cursor = db.cursor()
-    cursor.execute("DROP TABLE IF EXISTS urls")
 
