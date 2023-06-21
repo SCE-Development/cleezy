@@ -71,19 +71,10 @@ def get_url(sqlite_file: str, alias: str): #return the string for url entry for 
         result = cursor.fetchone()
 
         #delete the entry if it has been stored for over a year
-        if result:
-            year_ago_date = datetime.now() - timedelta(days=365)
-            result_datetime_str = result[3].split(".")[0]  # Remove fractional seconds
-            result_datetime = datetime.strptime(result_datetime_str, "%Y-%m-%d %H:%M:%S")
-            if result_datetime < year_ago_date:
-                sql = "DELETE FROM urls WHERE alias = ?"
-                cursor.execute(sql, (alias, ))
-                db.commit()
-                return None
-            else:
-                return result[1]
-        else:
+        if not result or maybe_delete_expired_url("urldatabase.db", result):
             return None
+        else:
+            return result[1]
     except Exception as e:
         print("exception", e)
         return None
@@ -91,7 +82,6 @@ def get_url(sqlite_file: str, alias: str): #return the string for url entry for 
 def delete_url(sqlite_file: str, alias: str): #delete entry in the database from specified alias
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
-    result = None
 
     try:
         sql = "DELETE FROM urls WHERE alias = ?"
@@ -100,4 +90,19 @@ def delete_url(sqlite_file: str, alias: str): #delete entry in the database from
 
         return cursor.rowcount > 0
     except Exception:
+        return False
+    
+def maybe_delete_expired_url(sqlite_file, sqlite_row) -> bool: #returns True if url expired and deleted, otherwise False
+    db = sqlite3.connect(sqlite_file)
+    cursor = db.cursor()
+
+    year_ago_date = datetime.now() - timedelta(days=365)
+    result_datetime_str = sqlite_row[3].split(".")[0]  # Remove fractional seconds
+    result_datetime = datetime.strptime(result_datetime_str, "%Y-%m-%d %H:%M:%S")
+    if result_datetime < year_ago_date:
+        sql = "DELETE FROM urls WHERE alias = ?"
+        cursor.execute(sql, (sqlite_row[2], ))
+        db.commit()
+        return True
+    else:
         return False
