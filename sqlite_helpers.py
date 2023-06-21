@@ -6,8 +6,21 @@ def maybe_create_table(sqlite_file: str) -> bool:
     cursor = db.cursor()
 
     try :
-        create_table_query = "CREATE TABLE IF NOT EXISTS urls (id INTEGER PRIMARY KEY, url TEXT, alias TEXT UNIQUE, timestamp DATETIME)"
+        create_table_query = """
+        CREATE TABLE IF NOT EXISTS urls (
+            id INTEGER PRIMARY KEY, 
+            url TEXT NOT NULL, 
+            alias TEXT NOT NULL, 
+            created_at DATETIME NOT NULL);
+        """
+
+        create_index_query = """
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_urls_alias
+        ON urls (alias);
+        """
+
         cursor.execute(create_table_query)
+        cursor.execute(create_index_query)
         db.commit()
         return True
     except Exception:
@@ -19,7 +32,7 @@ def insert_url(sqlite_file: str, url: str, alias: str):
     timestamp = datetime.now()
 
     try:
-        sql = "INSERT INTO urls(url, alias, timestamp) VALUES (?, ?, ?)"
+        sql = "INSERT INTO urls(url, alias, created_at) VALUES (?, ?, ?)"
         val = (url, alias, timestamp)
         cursor.execute(sql, val)
         db.commit()
@@ -41,7 +54,7 @@ def get_urls(sqlite_file: str): #returns all urls in the table
                 "id": row[0],
                 "url": row[1],
                 "alias": row[2],
-                "timestamp": row[3]
+                "created_at": row[3]
             }
             url_array.append(url_data)
         except KeyError:
@@ -85,9 +98,6 @@ def delete_url(sqlite_file: str, alias: str): #delete entry in the database from
         cursor.execute(sql, (alias, ))
         db.commit()
 
-        if cursor.rowcount == 0:
-            return False
-        else:
-            return True
+        return cursor.rowcount > 0
     except Exception:
         return False
