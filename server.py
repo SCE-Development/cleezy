@@ -12,7 +12,8 @@ from datetime import datetime, timedelta
 app = FastAPI()
 
 #maybe create the table if it doesnt already exist
-sqlite_helpers.maybe_create_table("urldatabase.db")
+DATABASE_FILE = "urldatabase.db"
+sqlite_helpers.maybe_create_table(DATABASE_FILE)
 
 @app.post("/create_url")
 async def create_url(request: Request):
@@ -20,31 +21,25 @@ async def create_url(request: Request):
     urljson = await request.json()
     timestamp = datetime.now()
 
-    if "url" not in urljson:
+    if "url" not in urljson or "alias" not in urljson:
         raise HTTPException(status_code=400, detail="URL required.")
 
-    if "alias" not in urljson:
-        aliasVal = generate_alias()
-    else:
-        aliasVal = urljson['alias']
-
-    if sqlite_helpers.insert_url("urldatabase.db", urljson['url'], aliasVal):
-        url_data = {"url": urljson['url'], "alias": aliasVal, "timestamp": timestamp, "message": "URL added successfully"}
-        return url_data
+    if sqlite_helpers.insert_url(DATABASE_FILE, urljson['url'], aliasVal):
+        return { "alias": aliasVal }
     else:
         raise HTTPException(status_code=409, detail="alias taken nerd")
     
     
 
-@app.get("/get_urls")
+@app.get("/list")
 async def get_all_urls():
-    return sqlite_helpers.get_urls("urldatabase.db")
+    return sqlite_helpers.get_urls(DATABASE_FILE)
 
 
-@app.get("/get_url/{alias}")
+@app.get("/find/{alias}")
 async def get_url(alias: str):
 
-    url_output = sqlite_helpers.get_url("urldatabase.db", alias)
+    url_output = sqlite_helpers.get_url(DATABASE_FILE, alias)
     if url_output is None:
         raise HTTPException(status_code=404, detail="URL not found.")
     
@@ -53,7 +48,7 @@ async def get_url(alias: str):
 
 @app.post("/delete_url/{alias}")
 async def delete_url(alias: str):
-    if(sqlite_helpers.delete_url("urldatabase.db", alias)):
+    if(sqlite_helpers.delete_url(DATABASE_FILE, alias)):
         return {"message": "URL deleted successfully"}
     else:
         raise HTTPException(status_code=404, detail="URL not found.")
@@ -117,10 +112,3 @@ async def http_exception_handler(request, exc):
     
     return exc
     
-
-def generate_alias():
-    idLength = 5
-    charOptions = string.ascii_letters + string.digits #lowercase, uppercase, and numbers
-    aliasID = ''.join(random.choices(charOptions, k=idLength))
-    return aliasID
-
