@@ -9,118 +9,55 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse
 from datetime import datetime, timedelta
 
+from constants import HttpResponse, http_code_to_enum
+
 app = FastAPI()
 
 #maybe create the table if it doesnt already exist
-sqlite_helpers.maybe_create_table("urldatabase.db")
+DATABASE_FILE = "urldatabase.db"
+sqlite_helpers.maybe_create_table(DATABASE_FILE)
 
 @app.post("/create_url")
 async def create_url(request: Request):
 
     urljson = await request.json()
-    timestamp = datetime.now()
+    timestamp = datetime.datetime.now()
 
-    if "url" not in urljson:
-        raise HTTPException(status_code=400, detail="URL required.")
+    if "url" not in urljson or "alias" not in urljson:
+        raise HTTPException(status_code=HttpResponse.Codes.BAD_REQUEST.code)
 
-    if "alias" not in urljson:
-        aliasVal = generate_alias()
+    if sqlite_helpers.insert_url(DATABASE_FILE, urljson['url'], urljson['alias']):
+        return { "alias": urljson['alias'] }
     else:
-        aliasVal = urljson['alias']
-
-    if sqlite_helpers.insert_url("urldatabase.db", urljson['url'], aliasVal):
-        url_data = {"url": urljson['url'], "alias": aliasVal, "timestamp": timestamp, "message": "URL added successfully"}
-        return url_data
-    else:
-        raise HTTPException(status_code=409, detail="alias taken nerd")
+        raise HTTPException(status_code=HttpResponse.Codes.CONFLICT.code )
     
     
 
-@app.get("/get_urls")
+@app.get("/list")
 async def get_all_urls():
-    return sqlite_helpers.get_urls("urldatabase.db")
+    return sqlite_helpers.get_urls(DATABASE_FILE)
 
 
-@app.get("/get_url/{alias}")
+@app.get("/find/{alias}")
 async def get_url(alias: str):
 
-    url_output = sqlite_helpers.get_url("urldatabase.db", alias)
+    url_output = sqlite_helpers.get_url(DATABASE_FILE, alias)
     if url_output is None:
-        raise HTTPException(status_code=404, detail="URL not found.")
+        raise HTTPException(status_code=HttpResponse.Codes.NOT_FOUND.code)
     
     return RedirectResponse(url_output)
     
 
 @app.post("/delete_url/{alias}")
 async def delete_url(alias: str):
-    if(sqlite_helpers.delete_url("urldatabase.db", alias)):
+    if(sqlite_helpers.delete_url(DATABASE_FILE, alias)):
         return {"message": "URL deleted successfully"}
     else:
-        raise HTTPException(status_code=404, detail="URL not found.")
+        raise HTTPException(status_code=HttpResponse.Codes.NOT_FOUND.code)
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
-    if exc.status_code == 400:
-        return HTMLResponse(content="<h1>URL required.</h1>", status_code=400)
-    if exc.status_code == 409:
-        return HTMLResponse(content="<h1>Alias already exists.</h1>", status_code=409)
-    if exc.status_code == 404:
-        customcontent = """
-        <html>
-            <head>
-                <title>404 Error</title>
-                <style>
-                    body {
-                        display: flex;
-                        flex-direction: column;
-                        justify-content: center;
-                        align-items: center;
-                    }
-                    .h1-container {
-                        margin-top: 40vh;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        text-align: center;
-                        font-family: Arial, sans-serif;
-                    }
+    status_code_enum = http_code_to_enum[exc.status_code]
+    return HTMLResponse(content=status_code_enum.content, status_code=status_code_enum.code)
 
-                    .h2-container {
-                        margin-top: 20px;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        text-align: center;
-                        font-family: Arial, sans-serif;
-                    }
-
-                    h1 {
-                        font-size: 36px;
-                    }
-
-                    h2 {
-                        font-size: 24px;
-                    }
-                </style>
-            </head>
-            <div class="h1-container">
-                <h1>404 Error</h1>
-                </div class="h2-container">
-                    <h2>URL Not Found</h2>
-                </div>
-            </div>
-            
-            
-        </html>
-        """
-        return HTMLResponse(content =customcontent, status_code=404)
     
-    return exc
-    
-
-def generate_alias():
-    idLength = 5
-    charOptions = string.ascii_letters + string.digits #lowercase, uppercase, and numbers
-    aliasID = ''.join(random.choices(charOptions, k=idLength))
-    return aliasID
-
