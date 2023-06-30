@@ -20,12 +20,12 @@ async def create_url(request: Request):
     timestamp = datetime.now()
 
     if "url" not in urljson or "alias" not in urljson:
-        raise HTTPException(status_code=404)
+        raise HTTPException(status_code=HttpResponse.BAD_REQUEST.code)
 
     if sqlite_helpers.insert_url(DATABASE_FILE, urljson['url'], urljson['alias']):
         return { "alias": urljson['alias'] }
     else:
-        raise HTTPException(status_code=409 )
+        raise HTTPException(status_code=HttpResponse.CONFLICT.code )
     
     
 
@@ -39,7 +39,7 @@ async def get_url(alias: str):
 
     url_output = sqlite_helpers.get_url(DATABASE_FILE, alias)
     if url_output is None:
-        raise HTTPException(status_code=404)
+        raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
     
     return RedirectResponse(url_output)
     
@@ -49,7 +49,7 @@ async def delete_url(alias: str):
     if(sqlite_helpers.delete_url(DATABASE_FILE, alias)):
         return {"message": "URL deleted successfully"}
     else:
-        raise HTTPException(status_code=404)
+        raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
