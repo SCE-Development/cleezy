@@ -106,10 +106,3 @@ def maybe_delete_expired_url(sqlite_file, sqlite_row) -> bool: #returns True if 
         return True
     else:
         return False
-
-def drop_table():
-  db = sqlite3.connect("urldatabase.db")
-  cursor = db.cursor()
-  cursor.execute("DROP TABLE IF EXISTS urls")
-  db.commit()
-
