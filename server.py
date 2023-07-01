@@ -2,14 +2,17 @@ import datetime
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse
+import uvicorn
 
+from args import get_args
 import sqlite_helpers
 from constants import HttpResponse, http_code_to_enum
 
 app = FastAPI()
+args = get_args()
 
 #maybe create the table if it doesnt already exist
-DATABASE_FILE = "urldatabase.db"
+DATABASE_FILE = args.database_file_path
 sqlite_helpers.maybe_create_table(DATABASE_FILE)
 
 @app.post("/create_url")
@@ -54,3 +57,6 @@ async def delete_url(alias: str):
 async def http_exception_handler(request, exc):
     status_code_enum = http_code_to_enum[exc.status_code]
     return HTMLResponse(content=status_code_enum.content, status_code=status_code_enum.code)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host=args.host, port=args.port)
