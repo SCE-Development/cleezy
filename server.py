@@ -1,10 +1,9 @@
-#python -m uvicorn server:app --reload
+import datetime
 
-import sqlite_helpers
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse
-from datetime import datetime
 
+import sqlite_helpers
 from constants import HttpResponse, http_code_to_enum
 
 app = FastAPI()
@@ -17,7 +16,7 @@ sqlite_helpers.maybe_create_table(DATABASE_FILE)
 async def create_url(request: Request):
 
     urljson = await request.json()
-    timestamp = datetime.now()
+    timestamp = datetime.datetime.now()
 
     if "url" not in urljson or "alias" not in urljson:
         raise HTTPException(status_code=HttpResponse.BAD_REQUEST.code)
@@ -55,5 +54,3 @@ async def delete_url(alias: str):
 async def http_exception_handler(request, exc):
     status_code_enum = http_code_to_enum[exc.status_code]
     return HTMLResponse(content=status_code_enum.content, status_code=status_code_enum.code)
-
-    
