@@ -24,11 +24,6 @@ async def create_url(request: Request):
         raise HTTPException(status_code=HttpResponse.BAD_REQUEST.code)
     else:
         aliasVal = urljson['alias'] if "alias" in urljson else generate_alias(urljson['url'])
-        # if "alias" in urljson:
-        #     aliasVal = urljson['alias']
-        # else:
-        #     aliasVal = generate_alias(urljson['url'])
-
 
     if sqlite_helpers.insert_url(DATABASE_FILE, urljson['url'], aliasVal):
         return { "alias": aliasVal }
