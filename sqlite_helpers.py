@@ -71,7 +71,7 @@ def get_url(sqlite_file: str, alias: str): #return the string for url entry for 
         result = cursor.fetchone()
 
         #delete the entry if it has been stored for over a year
-        if not result or maybe_delete_expired_url("urldatabase.db", result):
+        if not result or maybe_delete_expired_url(sqlite_file, result):
             return None
         else:
             return result[1]
