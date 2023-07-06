@@ -20,10 +20,15 @@ async def create_url(request: Request):
     urljson = await request.json()
     aliasVal = None
 
-    if "url" not in urljson or (args.disable_random_alias and "alias" not in urljson):
+    if "url" not in urljson:
         raise HTTPException(status_code=HttpResponse.BAD_REQUEST.code)
+    elif args.disable_random_alias and "alias" not in urljson:
+        raise HTTPException(status_code=HttpResponse.BAD_REQUEST.code)
+    
+    if "alias" not in urljson:
+        aliasVal = generate_alias(urljson['url'])
     else:
-        aliasVal = urljson['alias'] if "alias" in urljson else generate_alias(urljson['url'])
+        aliasVal = urljson['alias']
 
     if sqlite_helpers.insert_url(DATABASE_FILE, urljson['url'], aliasVal):
         return { "alias": aliasVal }
@@ -31,7 +36,6 @@ async def create_url(request: Request):
         raise HTTPException(status_code=HttpResponse.CONFLICT.code )
     
     
-
 @app.get("/list")
 async def get_all_urls():
     return sqlite_helpers.get_urls(DATABASE_FILE)
