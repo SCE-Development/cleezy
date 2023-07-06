@@ -1,10 +1,9 @@
-import datetime
-
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse
 import uvicorn
 
 from args import get_args
+from generate_alias import generate_alias
 import sqlite_helpers
 from constants import HttpResponse, http_code_to_enum
 
@@ -19,18 +18,24 @@ sqlite_helpers.maybe_create_table(DATABASE_FILE)
 async def create_url(request: Request):
 
     urljson = await request.json()
-    timestamp = datetime.datetime.now()
+    aliasVal = None
 
-    if "url" not in urljson or "alias" not in urljson:
+    if "url" not in urljson:
         raise HTTPException(status_code=HttpResponse.BAD_REQUEST.code)
+    elif args.disable_random_alias and "alias" not in urljson:
+        raise HTTPException(status_code=HttpResponse.BAD_REQUEST.code)
+    
+    if "alias" not in urljson:
+        aliasVal = generate_alias(urljson['url'])
+    else:
+        aliasVal = urljson['alias']
 
-    if sqlite_helpers.insert_url(DATABASE_FILE, urljson['url'], urljson['alias']):
-        return { "alias": urljson['alias'] }
+    if sqlite_helpers.insert_url(DATABASE_FILE, urljson['url'], aliasVal):
+        return { "alias": aliasVal }
     else:
         raise HTTPException(status_code=HttpResponse.CONFLICT.code )
     
     
-
 @app.get("/list")
 async def get_all_urls():
     return sqlite_helpers.get_urls(DATABASE_FILE)

@@ -1,4 +1,5 @@
 import argparse
+import time
 
 
 def get_args():
@@ -19,5 +20,12 @@ def get_args():
         default=8000,
         help="port for server to be hosted on, defaults to 8000"
     )
+    parser.add_argument(
+        "--disable-random-alias",
+        action= "store_true",
+        help="disable generating randomly hashed aliases"
+    )
+    
     
     return parser.parse_args()
+    
