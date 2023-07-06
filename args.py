@@ -1,6 +1,7 @@
 import argparse
 import time
 
+
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -27,3 +28,4 @@ def get_args():
     
     
     return parser.parse_args()
+    
