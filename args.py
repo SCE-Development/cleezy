@@ -25,7 +25,13 @@ def get_args():
         action= "store_true",
         help="disable generating randomly hashed aliases"
     )
-    
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="count",
+        default=0,
+        help="increase logging verbosity; can be used multiple times",
+    )
     
     return parser.parse_args()
     

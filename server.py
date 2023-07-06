@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse
+import logging
+import time
 import uvicorn
 
 from args import get_args
@@ -21,8 +23,10 @@ async def create_url(request: Request):
     aliasVal = None
 
     if "url" not in urljson:
+        logging.error("url not found")
         raise HTTPException(status_code=HttpResponse.BAD_REQUEST.code)
     elif args.disable_random_alias and "alias" not in urljson:
+        logging.error("alias not found")
         raise HTTPException(status_code=HttpResponse.BAD_REQUEST.code)
     
     if "alias" not in urljson:
@@ -33,6 +37,7 @@ async def create_url(request: Request):
     if sqlite_helpers.insert_url(DATABASE_FILE, urljson['url'], aliasVal):
         return { "alias": aliasVal }
     else:
+        logging.error("alias already taken")
         raise HTTPException(status_code=HttpResponse.CONFLICT.code )
     
     
@@ -46,6 +51,7 @@ async def get_url(alias: str):
 
     url_output = sqlite_helpers.get_url(DATABASE_FILE, alias)
     if url_output is None:
+        logging.error("url not found")
         raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
     
     return RedirectResponse(url_output)
@@ -56,6 +62,7 @@ async def delete_url(alias: str):
     if(sqlite_helpers.delete_url(DATABASE_FILE, alias)):
         return {"message": "URL deleted successfully"}
     else:
+        logging.error("url not found")
         raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
 
 @app.exception_handler(HTTPException)
@@ -63,5 +70,15 @@ async def http_exception_handler(request, exc):
     status_code_enum = http_code_to_enum[exc.status_code]
     return HTMLResponse(content=status_code_enum.content, status_code=status_code_enum.code)
 
+logging.Formatter.converter = time.gmtime
+
+logging.basicConfig(
+    # in mondo we trust
+    format="%(asctime)s.%(msecs)03dZ %(levelname)s:%(name)s:%(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%S",
+    level= logging.ERROR - (args.verbose*10),
+)
+
 if __name__ == "__main__":
+    logging.info(f"running on {args.host}, listening on port {args.port}")
     uvicorn.run(app, host=args.host, port=args.port)
