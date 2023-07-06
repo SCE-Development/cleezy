@@ -20,6 +20,7 @@ sqlite_helpers.maybe_create_table(DATABASE_FILE)
 async def create_url(request: Request):
 
     urljson = await request.json()
+    logging.debug(f"/create_url called with body: {urljson}")
     aliasVal = None
 
     if "url" not in urljson:
@@ -48,10 +49,10 @@ async def get_all_urls():
 
 @app.get("/find/{alias}")
 async def get_url(alias: str):
-
+    logging.debug(f"/find called with alias: {alias}")
     url_output = sqlite_helpers.get_url(DATABASE_FILE, alias)
     if url_output is None:
-        logging.error("url not found")
+        logging.error(f"alias: {alias} was not found")
         raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
     
     return RedirectResponse(url_output)
@@ -59,10 +60,11 @@ async def get_url(alias: str):
 
 @app.post("/delete/{alias}")
 async def delete_url(alias: str):
+    logging.debug(f"/delete called with alias: {alias}")
     if(sqlite_helpers.delete_url(DATABASE_FILE, alias)):
         return {"message": "URL deleted successfully"}
     else:
-        logging.error("url not found")
+        logging.error(f"alias: {alias} was not found")
         raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
 
 @app.exception_handler(HTTPException)
