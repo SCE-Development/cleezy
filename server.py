@@ -33,7 +33,6 @@ async def create_url(request: Request):
         if sqlite_helpers.insert_url(DATABASE_FILE, urljson['url'], alias):
             return { "alias": alias }
         else:
-            logging.error("alias already taken")
             raise HTTPException(status_code=HttpResponse.CONFLICT.code )
     except KeyError:
         logging.exception("returning 400 due to missing key")
@@ -53,7 +52,6 @@ async def get_url(alias: str):
     logging.debug(f"/find called with alias: {alias}")
     url_output = sqlite_helpers.get_url(DATABASE_FILE, alias)
     if url_output is None:
-        logging.error(f"alias: {alias} was not found")
         raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
     
     return RedirectResponse(url_output)
@@ -65,7 +63,6 @@ async def delete_url(alias: str):
     if(sqlite_helpers.delete_url(DATABASE_FILE, alias)):
         return {"message": "URL deleted successfully"}
     else:
-        logging.error(f"alias: {alias} was not found")
         raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
 
 @app.exception_handler(HTTPException)
