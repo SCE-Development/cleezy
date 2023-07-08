@@ -18,28 +18,29 @@ sqlite_helpers.maybe_create_table(DATABASE_FILE)
 
 @app.post("/create_url")
 async def create_url(request: Request):
-
     urljson = await request.json()
     logging.debug(f"/create_url called with body: {urljson}")
-    aliasVal = None
+    alias = None
 
-    if "url" not in urljson:
-        logging.error("url not found")
-        raise HTTPException(status_code=HttpResponse.BAD_REQUEST.code)
-    elif args.disable_random_alias and "alias" not in urljson:
-        logging.error("alias not found")
-        raise HTTPException(status_code=HttpResponse.BAD_REQUEST.code)
-    
-    if "alias" not in urljson:
-        aliasVal = generate_alias(urljson['url'])
-    else:
-        aliasVal = urljson['alias']
+    try:
+        alias = urljson.get('alias')
+        if alias is None:
+            if args.disable_random_alias:
+                raise KeyError("alias must be specified")
+            else:
+                alias = generate_alias()
 
-    if sqlite_helpers.insert_url(DATABASE_FILE, urljson['url'], aliasVal):
-        return { "alias": aliasVal }
-    else:
-        logging.error("alias already taken")
-        raise HTTPException(status_code=HttpResponse.CONFLICT.code )
+        if sqlite_helpers.insert_url(DATABASE_FILE, urljson['url'], alias):
+            return { "alias": alias }
+        else:
+            logging.error("alias already taken")
+            raise HTTPException(status_code=HttpResponse.CONFLICT.code )
+    except KeyError:
+        logging.exception("returning 400 due to missing key")
+        raise HTTPException(status_code=HttpResponse.BAD_REQUEST.code)
+    except Exception:
+        logging.exception("/create_url had an error")
+        raise HTTPException(status_code=HttpResponse.INTERNAL_SERVER_ERROR.code)
     
     
 @app.get("/list")
