@@ -37,11 +37,7 @@ async def create_url(request: Request):
     except KeyError:
         logging.exception("returning 400 due to missing key")
         raise HTTPException(status_code=HttpResponse.BAD_REQUEST.code)
-    except Exception:
-        logging.exception("/create_url had an error")
-        raise HTTPException(status_code=HttpResponse.INTERNAL_SERVER_ERROR.code)
-    
-    
+   
 @app.get("/list")
 async def get_all_urls():
     return sqlite_helpers.get_urls(DATABASE_FILE)
