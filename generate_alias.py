@@ -7,7 +7,7 @@ ALPHANUMERIC_CHARS = string.ascii_letters + string.digits
 
 def generate_alias(url):
   '''
-  Generates a random 5 character string with alphanumeric characters, for example "3diw8"
+  Generates a random 5 character string with alphanumeric characters, for example "e030f"
   '''
   timestamp = datetime.datetime.now()
   unique_object = f"{url}/{timestamp}"
