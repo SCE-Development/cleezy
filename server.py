@@ -28,7 +28,7 @@ async def create_url(request: Request):
             if args.disable_random_alias:
                 raise KeyError("alias must be specified")
             else:
-                alias = generate_alias()
+                alias = generate_alias(urljson['url'])
 
         if sqlite_helpers.insert_url(DATABASE_FILE, urljson['url'], alias):
             return { "alias": alias }
