@@ -31,7 +31,7 @@ async def create_url(request: Request):
                 alias = generate_alias(urljson['url'])
 
         if sqlite_helpers.insert_url(DATABASE_FILE, urljson['url'], alias):
-            return { "alias": alias }
+            return { "url": urljson['url'], "alias": alias }
         else:
             raise HTTPException(status_code=HttpResponse.CONFLICT.code )
     except KeyError:
