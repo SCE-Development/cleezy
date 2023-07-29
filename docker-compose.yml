@@ -4,7 +4,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    command:
+       - --database-file-path=/tmp/urldatabase.db
+       - -vvv
     ports:
       - '8000:8000'
     volumes:
-      - ./urldatabase.db:/src/urldatabase.db
+      - cleezy_data:/tmp/
+
+volumes:
+  cleezy_data:

@@ -1,16 +1,15 @@
-FROM python:3.9
+FROM python:3.9-slim-buster
 
-RUN mkdir /src
 WORKDIR /src
+
+RUN apt-get update && apt-get install -y default-libmysqlclient-dev
 
 COPY requirements.txt .
 
-RUN apt-get update && apt-get install -y default-libmysqlclient-dev
-RUN pip install --no-cache-dir --upgrade -r requirements.txt
-RUN pip install mysql-connector-python
+RUN pip install -r requirements.txt
 
 COPY . .
 
 EXPOSE 8000
 
-CMD ["python", "server.py", "--database-file-path", "urldatabase.db", "-vvv"]
+ENTRYPOINT ["python", "server.py"]
