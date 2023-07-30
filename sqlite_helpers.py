@@ -106,3 +106,14 @@ def maybe_delete_expired_url(sqlite_file, sqlite_row) -> bool: #returns True if 
         return True
     else:
         return False
+    
+def get_number_of_entries(sqlite_file):
+    db = sqlite3.connect(sqlite_file)
+    cursor = db.cursor()
+
+    sql = "SELECT COUNT(*) FROM urls"
+    cursor.execute(sql)
+    result = cursor.fetchone()
+
+    count = result[0]
+    return count
