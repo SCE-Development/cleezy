@@ -27,6 +27,22 @@ url_count = prometheus_client.Counter(
     "Number of urls in the database",
 )
 
+sql_error_count = prometheus_client.Counter(
+    "sql_error_count",
+    "Number of sql errors that have occurred",
+)
+
+find_count = prometheus_client.Counter(
+    "find_count",
+    "Number of urls successfully found",
+)
+
+query_time = prometheus_client.Histogram(
+    "query_time",
+    "Time taken to execute SQLite queries",
+    buckets=[0.1, 0.5, 1, 5],
+)
+
 #maybe create the table if it doesnt already exist
 DATABASE_FILE = args.database_file_path
 sqlite_helpers.maybe_create_table(DATABASE_FILE)
@@ -61,11 +77,15 @@ async def get_all_urls():
 
 @app.get("/find/{alias}")
 async def get_url(alias: str):
+    start_time = time.time()
     logging.debug(f"/find called with alias: {alias}")
     url_output = sqlite_helpers.get_url(DATABASE_FILE, alias)
+    elapsed_time = time.time() - start_time
+    query_time.observe(elapsed_time)
+
     if url_output is None:
         raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
-    
+    find_count.inc(1)
     return RedirectResponse(url_output)
     
 
@@ -79,6 +99,7 @@ async def delete_url(alias: str):
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
+    sql_error_count.inc(1)
     status_code_enum = http_code_to_enum[exc.status_code]
     return HTMLResponse(content=status_code_enum.content, status_code=status_code_enum.code)
 

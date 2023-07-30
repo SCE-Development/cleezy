@@ -2,6 +2,6 @@ global:
   scrape_interval: 5s
 
 scrape_configs:
-  - job_name: 'cleezy'
+  - job_name: 'app'
     static_configs:
-      - targets: ['cleezy:8000']
+      - targets: ['app:8000']
