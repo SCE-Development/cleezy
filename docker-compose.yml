@@ -1,14 +1,13 @@
 version: '3.7'
 services:
   app:
+    container_name: cleezy-app
     build:
       context: .
       dockerfile: Dockerfile
     command:
        - --database-file-path=/tmp/urldatabase.db
        - -vvv
-    ports:
-      - '8000:8000'
     volumes:
       - cleezy_data:/tmp/
   prometheus:
@@ -18,12 +17,9 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
-    ports:
-      - 9090:9090
   nginx:
+    container_name: cleezy_nginx
     image: nginx:alpine
-    ports:
-      - 80:80
     volumes:
         - ./nginx.conf:/etc/nginx/nginx.conf
 
