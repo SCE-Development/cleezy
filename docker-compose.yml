@@ -11,6 +11,15 @@ services:
       - '8000:8000'
     volumes:
       - cleezy_data:/tmp/
+  prometheus:
+    image: prom/prometheus:latest
+    restart: always
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
 
 volumes:
   cleezy_data:
