@@ -25,3 +25,8 @@ services:
 
 volumes:
   cleezy_data:
+
+networks: 
+  default:
+    external: 
+      name: sce
