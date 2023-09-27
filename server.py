@@ -68,7 +68,7 @@ async def create_url(request: Request):
         logging.exception("returning 400 due to missing key")
         raise HTTPException(status_code=HttpResponse.BAD_REQUEST.code)
     except ValueError:
-        logging.exception("returning 422 due to invalid alias")
+        logging.exception(f"returning 422 due to invalid alias of {alias}")
         raise HTTPException(status_code=HttpResponse.INVALID_ARGUMENT_EXCEPTION.code)
    
 @app.get("/list")
