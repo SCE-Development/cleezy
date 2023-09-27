@@ -5,7 +5,6 @@ import logging
 import time
 import prometheus_client
 import uvicorn
-import re
 
 from args import get_args
 from generate_alias import generate_alias
@@ -51,13 +50,14 @@ async def create_url(request: Request):
 
     try:
         alias = urljson.get('alias')
-        if not bool(re.match("^[a-zA-Z0-9]+$", alias)):
-            raise ValueError("alias must only contain alphanumeric characters")
         if alias is None:
             if args.disable_random_alias:
                 raise KeyError("alias must be specified")
             else:
                 alias = generate_alias(urljson['url'])
+        if not alias.isalnum():
+            raise ValueError("alias must only contain alphanumeric characters")
+
         with query_time.labels("create").time():
             if sqlite_helpers.insert_url(DATABASE_FILE, urljson['url'], alias):
                 url_count.inc(1)
