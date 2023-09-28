@@ -6,7 +6,6 @@ import time
 import prometheus_client
 import uvicorn
 
-
 from args import get_args
 from generate_alias import generate_alias
 import sqlite_helpers
@@ -56,6 +55,8 @@ async def create_url(request: Request):
                 raise KeyError("alias must be specified")
             else:
                 alias = generate_alias(urljson['url'])
+        if not alias.isalnum():
+            raise ValueError("alias must only contain alphanumeric characters")
 
         with query_time.labels("create").time():
             if sqlite_helpers.insert_url(DATABASE_FILE, urljson['url'], alias):
@@ -66,6 +67,9 @@ async def create_url(request: Request):
     except KeyError:
         logging.exception("returning 400 due to missing key")
         raise HTTPException(status_code=HttpResponse.BAD_REQUEST.code)
+    except ValueError:
+        logging.exception(f"returning 422 due to invalid alias of \"{alias}\"")
+        raise HTTPException(status_code=HttpResponse.INVALID_ARGUMENT_EXCEPTION.code)
    
 @app.get("/list")
 async def get_all_urls():
