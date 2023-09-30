@@ -10,6 +10,7 @@ from args import get_args
 from generate_alias import generate_alias
 import sqlite_helpers
 from constants import HttpResponse, http_code_to_enum
+from metrics import MetricsHandler
 
 app = FastAPI()
 args = get_args()
@@ -21,22 +22,7 @@ app.add_middleware(
     allow_headers=['*'],
 )
 
-url_count = prometheus_client.Counter(
-    "url_count",
-    "Number of urls in the database",
-)
-
-http_error_codes = prometheus_client.Counter(
-    "http_error_codes",
-    "Number of HTTP errors labeled by code",
-    labelnames=["error_code"]
-)
-
-query_time = prometheus_client.Summary(
-    "query_time",
-    "Time taken to execute SQLite queries",
-    labelnames=["query_type"]
-)
+metrics_handler = MetricsHandler.instance()
 
 #maybe create the table if it doesnt already exist
 DATABASE_FILE = args.database_file_path
@@ -58,9 +44,9 @@ async def create_url(request: Request):
         if not alias.isalnum():
             raise ValueError("alias must only contain alphanumeric characters")
 
-        with query_time.labels("create").time():
+        with MetricsHandler.query_time.labels("create").time():
             if sqlite_helpers.insert_url(DATABASE_FILE, urljson['url'], alias):
-                url_count.inc(1)
+                MetricsHandler.url_count.inc(1)
                 return { "url": urljson['url'], "alias": alias }
             else:
                 raise HTTPException(status_code=HttpResponse.CONFLICT.code )
@@ -73,14 +59,14 @@ async def create_url(request: Request):
    
 @app.get("/list")
 async def get_all_urls():
-    with query_time.labels("list").time():
+    with MetricsHandler.query_time.labels("list").time():
       return sqlite_helpers.get_urls(DATABASE_FILE)
 
 
 @app.get("/find/{alias}")
 async def get_url(alias: str):
     logging.debug(f"/find called with alias: {alias}")
-    with query_time.labels("find").time():
+    with MetricsHandler.query_time.labels("find").time():
         url_output = sqlite_helpers.get_url(DATABASE_FILE, alias)
 
     if url_output is None:
@@ -91,7 +77,7 @@ async def get_url(alias: str):
 @app.post("/delete/{alias}")
 async def delete_url(alias: str):
     logging.debug(f"/delete called with alias: {alias}")
-    with query_time.labels("delete").time():
+    with MetricsHandler.query_time.labels("delete").time():
       if(sqlite_helpers.delete_url(DATABASE_FILE, alias)):
           return {"message": "URL deleted successfully"}
       else:
@@ -100,7 +86,7 @@ async def delete_url(alias: str):
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
     status_code_enum = http_code_to_enum[exc.status_code]
-    http_error_codes.labels(status_code_enum.code).inc(1)
+    MetricsHandler.http_error_codes.labels(status_code_enum.code).inc(1)
     return HTMLResponse(content=status_code_enum.content, status_code=status_code_enum.code)
 
 @app.get("/metrics")
@@ -122,5 +108,5 @@ logging.basicConfig(
 if __name__ == "__main__":
     logging.info(f"running on {args.host}, listening on port {args.port}")
     initial_url_count = sqlite_helpers.get_number_of_entries(DATABASE_FILE)
-    url_count.inc(initial_url_count)
+    MetricsHandler.url_count.inc(initial_url_count)
     uvicorn.run(app, host=args.host, port=args.port)
