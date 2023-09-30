@@ -15,6 +15,8 @@ services:
       - cleezy_data_dev:/tmp/
       - ./server.py:/app/server.py
       - ./modules:/app/modules
+    environment:
+      - WATCHFILES_FORCE_POLLING=true
 
 volumes:
   cleezy_data_dev:
