@@ -6,11 +6,12 @@ import time
 import prometheus_client
 import uvicorn
 
-from args import get_args
-from generate_alias import generate_alias
-import sqlite_helpers
-from constants import HttpResponse, http_code_to_enum
-from metrics import MetricsHandler
+from modules.args import get_args
+from modules.generate_alias import generate_alias
+import modules.sqlite_helpers as sqlite_helpers
+from modules.constants import HttpResponse, http_code_to_enum
+from modules.metrics import MetricsHandler
+
 
 app = FastAPI()
 args = get_args()
@@ -105,8 +106,18 @@ logging.basicConfig(
     level= logging.ERROR - (args.verbose*10),
 )
 
-if __name__ == "__main__":
-    logging.info(f"running on {args.host}, listening on port {args.port}")
+# we have a separate __name__ check here due to how FastAPI starts
+# a server. the file is first ran (where __name__ == "__main__")
+# and then calls `uvicorn.run`. the call to run() reruns the file,
+# this time __name__ == "server". the separate __name__ if statement
+# is so the thread references the same instance as the global
+# metrics_handler referenced by the rest of the file. otherwise,
+# the thread interacts with an instance different than the one the
+# server uses
+if __name__ == "server":
     initial_url_count = sqlite_helpers.get_number_of_entries(DATABASE_FILE)
     MetricsHandler.url_count.inc(initial_url_count)
-    uvicorn.run(app, host=args.host, port=args.port)
+
+if __name__ == "__main__":
+    logging.info(f"running on {args.host}, listening on port {args.port}")
+    uvicorn.run("server:app", host=args.host, port=args.port, reload=True)

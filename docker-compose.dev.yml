@@ -1,0 +1,20 @@
+version: '3.7'
+services:
+  app:
+    container_name: cleezy-app-dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+       - --database-file-path=/tmp/urldatabase.db
+       - --port=8000
+       - -vvv
+    ports:
+      - 8000:8000
+    volumes:
+      - cleezy_data_dev:/tmp/
+      - ./server.py:/app/server.py
+      - ./modules:/app/modules
+
+volumes:
+  cleezy_data_dev:

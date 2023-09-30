@@ -10,6 +10,8 @@ services:
        - -vvv
     volumes:
       - cleezy_data:/tmp/
+      - ./server.py:/app/server.py
+      - ./modules:/app/modules
   prometheus:
     image: prom/prometheus:latest
     restart: always
