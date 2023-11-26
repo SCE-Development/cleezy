@@ -56,7 +56,7 @@ def get_urls(sqlite_file: str): #returns all urls in the table
     cursor.execute(sql)
     result = cursor.fetchall()
     url_array = []
-    for row in result:
+    for row in reversed(result):
         try:
             url_data = {
                 "id": row[0],
