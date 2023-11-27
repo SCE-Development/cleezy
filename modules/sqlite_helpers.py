@@ -52,7 +52,7 @@ def get_urls(sqlite_file: str): #returns all urls in the table
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
     
-    sql = "SELECT * FROM urls"
+    sql = "SELECT * from urls order by created_at desc"
     cursor.execute(sql)
     result = cursor.fetchall()
     url_array = []
