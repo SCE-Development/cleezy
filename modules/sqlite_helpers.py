@@ -30,7 +30,7 @@ def maybe_create_table(sqlite_file: str) -> bool:
     except Exception:
         logger.exception("Unable to create urls table")
         return False
-    
+
 def insert_url(sqlite_file: str, url: str, alias: str):
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
@@ -48,45 +48,47 @@ def insert_url(sqlite_file: str, url: str, alias: str):
         logger.exception("Inserting url had an error")
         return False
 
-def get_urls(sqlite_file: str): #returns all urls in the table
+def get_urls(sqlite_file, page, limit):
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
     
-    sql = "SELECT * from urls order by created_at desc"
-    cursor.execute(sql)
+    offset = (page - 1) * limit
+    sql = "SELECT * FROM urls LIMIT ? OFFSET ?"
+    cursor.execute(sql, (limit, offset))
     result = cursor.fetchall()
     url_array = []
     for row in result:
-        try:
-            url_data = {
+        url_data = {
                 "id": row[0],
                 "url": row[1],
                 "alias": row[2],
                 "created_at": row[3]
             }
-            url_array.append(url_data)
-        except KeyError:
-            continue
+        url_array.append(url_data)
     return url_array
 
-def get_url(sqlite_file: str, alias: str): #return the string for url entry for a specified alias
+def search(sqlite_file, search_term, page, limit):
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
     
-    try:
-        sql = "SELECT * FROM urls WHERE alias = ?"
-        cursor.execute(sql, (alias,))
-        result = cursor.fetchone()
+    offset = (page - 1) * limit
+    sql = """
+    SELECT * FROM urls 
+    WHERE LOWER(alias) LIKE LOWER(?) 
+    OR LOWER(url) LIKE LOWER(?)
+    LIMIT ? OFFSET ?
+    """
+    cursor.execute(sql, ('%' + search_term + '%', '%' + search_term + '%', limit, offset))
+    result = cursor.fetchall()
+    url_array = []
+    for row in result:
+        url_data = {
+            "alias": row[2],
+            "url": row[1]
+        }
+        url_array.append(url_data)
+    return url_array
 
-        #delete the entry if it has been stored for over a year
-        if not result or maybe_delete_expired_url(sqlite_file, result):
-            return None
-        else:
-            return result[1]
-    except Exception:
-        logger.exception("Getting url had an error")
-        return None
-    
 def delete_url(sqlite_file: str, alias: str): #delete entry in the database from specified alias
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
@@ -129,26 +131,3 @@ def get_number_of_entries(sqlite_file):
     except Exception:
         logger.exception("Couldn't get number of urls")
     return count
-
-def search(sqlite_file, search_term):
-    db = sqlite3.connect(sqlite_file)
-    cursor = db.cursor()
-    
-    sql = """
-    SELECT * FROM urls 
-    WHERE LOWER(alias) LIKE LOWER(?) 
-    OR LOWER(url) LIKE LOWER(?)
-    """
-    cursor.execute(sql, ('%' + search_term + '%', '%' + search_term + '%',))
-    result = cursor.fetchall()
-    url_array = []
-    for row in result:
-        try:
-            url_data = {
-                "alias": row[2],
-                "url": row[1]
-            }
-            url_array.append(url_data)
-        except KeyError:
-            continue
-    return url_array
