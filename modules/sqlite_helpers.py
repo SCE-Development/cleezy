@@ -129,3 +129,26 @@ def get_number_of_entries(sqlite_file):
     except Exception:
         logger.exception("Couldn't get number of urls")
     return count
+
+def search(sqlite_file, search_term):
+    db = sqlite3.connect(sqlite_file)
+    cursor = db.cursor()
+    
+    sql = """
+    SELECT * FROM urls 
+    WHERE LOWER(alias) LIKE LOWER(?) 
+    OR LOWER(url) LIKE LOWER(?)
+    """
+    cursor.execute(sql, ('%' + search_term + '%', '%' + search_term + '%',))
+    result = cursor.fetchall()
+    url_array = []
+    for row in result:
+        try:
+            url_data = {
+                "alias": row[2],
+                "url": row[1]
+            }
+            url_array.append(url_data)
+        except KeyError:
+            continue
+    return url_array

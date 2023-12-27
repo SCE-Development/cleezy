@@ -73,7 +73,16 @@ async def get_url(alias: str):
     if url_output is None:
         raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
     return RedirectResponse(url_output)
-    
+
+@app.get("/search/{term}")
+async def search_url(term: str):
+    logging.debug(f"/search called with term: {term}")
+    with MetricsHandler.query_time.labels("search").time():
+        search_output = sqlite_helpers.search(DATABASE_FILE, term)
+
+    if not search_output:
+        raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
+    return search_output
 
 @app.post("/delete/{alias}")
 async def delete_url(alias: str):
