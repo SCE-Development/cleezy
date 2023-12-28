@@ -70,9 +70,11 @@ def get_urls(sqlite_file, page=0, limit=ROWS_PER_PAGE, search=None):
     url_array = []
     for row in result:
         url_data = {
-            "alias": row[2],
-            "url": row[1]
-        }
+                "id": row[0],
+                "url": row[1],
+                "alias": row[2],
+                "created_at": row[3]
+            }
         url_array.append(url_data)
     return url_array
 
@@ -110,9 +112,11 @@ def search(sqlite_file, search_term, page):
     url_array = []
     for row in result:
         url_data = {
-            "alias": row[2],
-            "url": row[1]
-        }
+                "id": row[0],
+                "url": row[1],
+                "alias": row[2],
+                "created_at": row[3]
+            }
         url_array.append(url_data)
     return url_array
 
