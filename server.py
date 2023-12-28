@@ -70,6 +70,7 @@ async def get_all_urls(search: Optional[str] = None, page: Optional[int] = 1):
         else:
             return sqlite_helpers.get_urls(DATABASE_FILE, page, ROWS_PER_PAGE)
 
+@app.get("/find/{alias}")
 async def get_url(alias: str):
     logging.debug(f"/find called with alias: {alias}")
     with MetricsHandler.query_time.labels("find").time():
