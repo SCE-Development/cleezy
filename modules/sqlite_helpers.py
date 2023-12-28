@@ -55,16 +55,16 @@ def get_urls(sqlite_file, page=0, limit=ROWS_PER_PAGE, search=None):
     
     offset = page * limit
     if search:
-        sql = """
+        sql = f"""
         SELECT * FROM urls 
-        WHERE LOWER(alias) LIKE LOWER(?) 
-        OR LOWER(url) LIKE LOWER(?)
-        LIMIT ? OFFSET ?
+        WHERE LOWER(alias) LIKE LOWER('%{search}%') 
+        OR LOWER(url) LIKE LOWER('%{search}%')
+        LIMIT {limit} OFFSET {offset}
         """
-        cursor.execute(sql, ('%' + search + '%', '%' + search + '%', limit, offset))
+        cursor.execute(sql)
     else:
-        sql = "SELECT * FROM urls LIMIT ? OFFSET ?"
-        cursor.execute(sql, (limit, offset))
+        sql = f"SELECT * FROM urls LIMIT {limit} OFFSET {offset}"
+        cursor.execute(sql)
     
     result = cursor.fetchall()
     url_array = []
