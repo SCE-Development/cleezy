@@ -96,30 +96,6 @@ def get_url(sqlite_file: str, alias: str): #return the string for url entry for 
         logger.exception("Getting url had an error")
         return None
 
-def search(sqlite_file, search_term, page):
-    db = sqlite3.connect(sqlite_file)
-    cursor = db.cursor()
-    
-    offset = page * ROWS_PER_PAGE
-    sql = """
-    SELECT * FROM urls 
-    WHERE LOWER(alias) LIKE LOWER(?) 
-    OR LOWER(url) LIKE LOWER(?)
-    LIMIT ? OFFSET ?
-    """
-    cursor.execute(sql, ('%' + search_term + '%', '%' + search_term + '%', ROWS_PER_PAGE, offset))
-    result = cursor.fetchall()
-    url_array = []
-    for row in result:
-        url_data = {
-                "id": row[0],
-                "url": row[1],
-                "alias": row[2],
-                "created_at": row[3]
-            }
-        url_array.append(url_data)
-    return url_array
-
 def delete_url(sqlite_file: str, alias: str): #delete entry in the database from specified alias
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
