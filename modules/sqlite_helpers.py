@@ -49,11 +49,11 @@ def insert_url(sqlite_file: str, url: str, alias: str):
         logger.exception("Inserting url had an error")
         return False
 
-def get_urls(sqlite_file, page=0, search=None):
+def get_urls(sqlite_file, page=0, limit=ROWS_PER_PAGE, search=None):
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
     
-    offset = page * ROWS_PER_PAGE
+    offset = page * limit
     if search:
         sql = """
         SELECT * FROM urls 
@@ -61,10 +61,10 @@ def get_urls(sqlite_file, page=0, search=None):
         OR LOWER(url) LIKE LOWER(?)
         LIMIT ? OFFSET ?
         """
-        cursor.execute(sql, ('%' + search + '%', '%' + search + '%', ROWS_PER_PAGE, offset))
+        cursor.execute(sql, ('%' + search + '%', '%' + search + '%', limit, offset))
     else:
         sql = "SELECT * FROM urls LIMIT ? OFFSET ?"
-        cursor.execute(sql, (ROWS_PER_PAGE, offset))
+        cursor.execute(sql, (limit, offset))
     
     result = cursor.fetchall()
     url_array = []

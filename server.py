@@ -59,12 +59,12 @@ async def create_url(request: Request):
         raise HTTPException(status_code=HttpResponse.INVALID_ARGUMENT_EXCEPTION.code)
 
 @app.get("/list")
-async def get_all_urls(search: Optional[str] = None, page: Optional[int] = 1):
-    if page is None or page < 1:
+async def get_all_urls(search: Optional[str] = None, page: int = 0):
+    if page < 0:
         raise HTTPException(status_code=400, detail="Invalid page number")
     with MetricsHandler.query_time.labels("list").time():
         if search:
-            return sqlite_helpers.search(DATABASE_FILE, search, page)
+            return sqlite_helpers.get_urls(DATABASE_FILE, page, search=search)
         else:
             return sqlite_helpers.get_urls(DATABASE_FILE, page)
 
