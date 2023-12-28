@@ -76,6 +76,24 @@ def get_urls(sqlite_file, page=0, limit=ROWS_PER_PAGE, search=None):
         url_array.append(url_data)
     return url_array
 
+def get_url(sqlite_file: str, alias: str): #return the string for url entry for a specified alias
+    db = sqlite3.connect(sqlite_file)
+    cursor = db.cursor()
+    
+    try:
+        sql = "SELECT * FROM urls WHERE alias = ?"
+        cursor.execute(sql, (alias,))
+        result = cursor.fetchone()
+
+        #delete the entry if it has been stored for over a year
+        if not result or maybe_delete_expired_url(sqlite_file, result):
+            return None
+        else:
+            return result[1]
+    except Exception:
+        logger.exception("Getting url had an error")
+        return None
+
 def search(sqlite_file, search_term, page):
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
