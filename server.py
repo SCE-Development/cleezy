@@ -13,8 +13,6 @@ import modules.sqlite_helpers as sqlite_helpers
 from modules.constants import HttpResponse, http_code_to_enum
 from modules.metrics import MetricsHandler
 
-ROWS_PER_PAGE = 10
-
 app = FastAPI()
 args = get_args()
 
@@ -66,9 +64,9 @@ async def get_all_urls(search: Optional[str] = None, page: Optional[int] = 1):
         raise HTTPException(status_code=400, detail="Invalid page number")
     with MetricsHandler.query_time.labels("list").time():
         if search:
-            return sqlite_helpers.search(DATABASE_FILE, search, page, ROWS_PER_PAGE)
+            return sqlite_helpers.search(DATABASE_FILE, search, page)
         else:
-            return sqlite_helpers.get_urls(DATABASE_FILE, page, ROWS_PER_PAGE)
+            return sqlite_helpers.get_urls(DATABASE_FILE, page)
 
 @app.get("/find/{alias}")
 async def get_url(alias: str):

@@ -2,6 +2,7 @@ import sqlite3
 from datetime import datetime, timedelta
 import logging
 
+ROWS_PER_PAGE=10
 
 logger = logging.getLogger(__name__)
 
@@ -48,37 +49,45 @@ def insert_url(sqlite_file: str, url: str, alias: str):
         logger.exception("Inserting url had an error")
         return False
 
-def get_urls(sqlite_file, page, limit):
+def get_urls(sqlite_file, page=0, search=None):
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
     
-    offset = (page - 1) * limit
-    sql = "SELECT * FROM urls LIMIT ? OFFSET ?"
-    cursor.execute(sql, (limit, offset))
+    offset = page * ROWS_PER_PAGE
+    if search:
+        sql = """
+        SELECT * FROM urls 
+        WHERE LOWER(alias) LIKE LOWER(?) 
+        OR LOWER(url) LIKE LOWER(?)
+        LIMIT ? OFFSET ?
+        """
+        cursor.execute(sql, ('%' + search + '%', '%' + search + '%', ROWS_PER_PAGE, offset))
+    else:
+        sql = "SELECT * FROM urls LIMIT ? OFFSET ?"
+        cursor.execute(sql, (ROWS_PER_PAGE, offset))
+    
     result = cursor.fetchall()
     url_array = []
     for row in result:
         url_data = {
-                "id": row[0],
-                "url": row[1],
-                "alias": row[2],
-                "created_at": row[3]
-            }
+            "alias": row[2],
+            "url": row[1]
+        }
         url_array.append(url_data)
     return url_array
 
-def search(sqlite_file, search_term, page, limit):
+def search(sqlite_file, search_term, page):
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
     
-    offset = (page - 1) * limit
+    offset = page * ROWS_PER_PAGE
     sql = """
     SELECT * FROM urls 
     WHERE LOWER(alias) LIKE LOWER(?) 
     OR LOWER(url) LIKE LOWER(?)
     LIMIT ? OFFSET ?
     """
-    cursor.execute(sql, ('%' + search_term + '%', '%' + search_term + '%', limit, offset))
+    cursor.execute(sql, ('%' + search_term + '%', '%' + search_term + '%', ROWS_PER_PAGE, offset))
     result = cursor.fetchall()
     url_array = []
     for row in result:
