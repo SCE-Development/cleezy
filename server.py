@@ -65,10 +65,7 @@ async def get_urls(search: Optional[str] = None, page: int = 0):
     if search and not search.isalnum():
         raise HTTPException(status_code=400, detail=f'search term "{search}" is invalid. only alphanumeric chars are allowed')
     with MetricsHandler.query_time.labels("list").time():
-        if search:
-            return sqlite_helpers.get_urls(DATABASE_FILE, page, search=search)
-        else:
-            return sqlite_helpers.get_urls(DATABASE_FILE, page)
+        return sqlite_helpers.get_urls(DATABASE_FILE, page, search=search)
 
 @app.get("/find/{alias}")
 async def get_url(alias: str):
