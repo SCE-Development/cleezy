@@ -68,13 +68,16 @@ def get_urls(sqlite_file, page=0, limit=ROWS_PER_PAGE, search=None):
     result = cursor.fetchall()
     url_array = []
     for row in result:
-        url_data = {
+        try:
+            url_data = {
                 "id": row[0],
                 "url": row[1],
                 "alias": row[2],
                 "created_at": row[3]
             }
-        url_array.append(url_data)
+            url_array.append(url_data)
+        except KeyError:
+            continue
     return url_array
 
 def get_url(sqlite_file: str, alias: str): #return the string for url entry for a specified alias
