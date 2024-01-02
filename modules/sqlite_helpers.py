@@ -2,6 +2,7 @@ import sqlite3
 from datetime import datetime, timedelta
 import logging
 
+ROWS_PER_PAGE = 10
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ def maybe_create_table(sqlite_file: str) -> bool:
     except Exception:
         logger.exception("Unable to create urls table")
         return False
-    
+
 def insert_url(sqlite_file: str, url: str, alias: str):
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
@@ -48,12 +49,22 @@ def insert_url(sqlite_file: str, url: str, alias: str):
         logger.exception("Inserting url had an error")
         return False
 
-def get_urls(sqlite_file: str): #returns all urls in the table
+def get_urls(sqlite_file, page=0, limit=ROWS_PER_PAGE, search=None):
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
     
-    sql = "SELECT * from urls order by created_at desc"
+    offset = page * limit
+    if search:
+        sql = f"""
+        SELECT * FROM urls 
+        WHERE LOWER(alias) LIKE LOWER('%{search}%') 
+        OR LOWER(url) LIKE LOWER('%{search}%')
+        LIMIT {limit} OFFSET {offset}
+        """
+    else:
+        sql = f"SELECT * FROM urls LIMIT {limit} OFFSET {offset}"
     cursor.execute(sql)
+    
     result = cursor.fetchall()
     url_array = []
     for row in result:
@@ -86,7 +97,7 @@ def get_url(sqlite_file: str, alias: str): #return the string for url entry for 
     except Exception:
         logger.exception("Getting url had an error")
         return None
-    
+
 def delete_url(sqlite_file: str, alias: str): #delete entry in the database from specified alias
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
