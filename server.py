@@ -29,6 +29,14 @@ metrics_handler = MetricsHandler.instance()
 DATABASE_FILE = args.database_file_path
 sqlite_helpers.maybe_create_table(DATABASE_FILE)
 
+# middleware to get metrics on HTTP response codes
+@app.middleware("http")
+async def track_response_codes(request: Request, call_next):
+    response = await call_next(request)
+    status_code = response.status_code
+    MetricsHandler.http_code.labels(request.url.path, status_code).inc()
+    return response
+
 @app.post("/create_url")
 async def create_url(request: Request):
     urljson = await request.json()
