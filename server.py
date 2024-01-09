@@ -95,7 +95,6 @@ async def delete_url(alias: str):
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
     status_code_enum = http_code_to_enum[exc.status_code]
-    MetricsHandler.http_error_codes.labels(status_code_enum.code).inc(1)
     return HTMLResponse(content=status_code_enum.content, status_code=status_code_enum.code)
 
 @app.get("/metrics")
