@@ -9,17 +9,17 @@ class Metrics(enum.Enum):
         "Number of urls in the database",
         prometheus_client.Counter,
     )
-    HTTP_ERROR_CODES = (
-        "http_error_codes",
-        "Number of HTTP errors labeled by code",
-        prometheus_client.Counter,
-        ["error_code"],
-    )
     QUERY_TIME = (
         "query_time",
         "Time taken to execute SQLite queries",
         prometheus_client.Summary,
         ["query_type"],
+    )
+    HTTP_CODE = (
+        "http_code",
+        "Count of each HTTP Response code",
+        prometheus_client.Counter,
+        ['path', 'code'],
     )
 
     def __init__(self, title, description, prometheus_type, labels=()):
