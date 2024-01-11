@@ -66,7 +66,7 @@ async def get_urls(search: Optional[str] = None, page: int = 0):
         raise HTTPException(status_code=400, detail=f'search term "{search}" is invalid. only alphanumeric chars are allowed')
     with MetricsHandler.query_time.labels("list").time():
         urls = sqlite_helpers.get_urls(DATABASE_FILE, page, search=search)
-        total_urls = sqlite_helpers.get_number_of_entries(DATABASE_FILE)
+        total_urls = sqlite_helpers.get_number_of_entries(DATABASE_FILE, search=search)
         return {"data": urls, "total": total_urls}
 
 @app.get("/find/{alias}")
