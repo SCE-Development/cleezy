@@ -49,20 +49,20 @@ def insert_url(sqlite_file: str, url: str, alias: str):
         logger.exception("Inserting url had an error")
         return False
 
-def get_urls(sqlite_file, page=0, limit=ROWS_PER_PAGE, search=None):
+def get_urls(sqlite_file, page=0, search=None):
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
     
-    offset = page * limit
+    offset = page * ROWS_PER_PAGE
     if search:
         sql = f"""
         SELECT * FROM urls 
         WHERE LOWER(alias) LIKE LOWER('%{search}%') 
         OR LOWER(url) LIKE LOWER('%{search}%')
-        LIMIT {limit} OFFSET {offset}
+        LIMIT {ROWS_PER_PAGE} OFFSET {offset}
         """
     else:
-        sql = f"SELECT * FROM urls LIMIT {limit} OFFSET {offset}"
+        sql = f"SELECT * FROM urls LIMIT {ROWS_PER_PAGE} OFFSET {offset}"
     cursor.execute(sql)
     
     result = cursor.fetchall()
