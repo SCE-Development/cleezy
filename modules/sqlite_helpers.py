@@ -2,6 +2,7 @@ import sqlite3
 from datetime import datetime, timedelta
 import logging
 
+ROWS_PER_PAGE = 25
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ def maybe_create_table(sqlite_file: str) -> bool:
     except Exception:
         logger.exception("Unable to create urls table")
         return False
-    
+
 def insert_url(sqlite_file: str, url: str, alias: str):
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
@@ -48,12 +49,22 @@ def insert_url(sqlite_file: str, url: str, alias: str):
         logger.exception("Inserting url had an error")
         return False
 
-def get_urls(sqlite_file: str): #returns all urls in the table
+def get_urls(sqlite_file, page=0, search=None):
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
     
-    sql = "SELECT * from urls order by created_at desc"
+    offset = page * ROWS_PER_PAGE
+    if search:
+        sql = f"""
+        SELECT * FROM urls 
+        WHERE LOWER(alias) LIKE LOWER('%{search}%') 
+        OR LOWER(url) LIKE LOWER('%{search}%')
+        LIMIT {ROWS_PER_PAGE} OFFSET {offset}
+        """
+    else:
+        sql = f"SELECT * FROM urls LIMIT {ROWS_PER_PAGE} OFFSET {offset}"
     cursor.execute(sql)
+    
     result = cursor.fetchall()
     url_array = []
     for row in result:
@@ -86,7 +97,7 @@ def get_url(sqlite_file: str, alias: str): #return the string for url entry for 
     except Exception:
         logger.exception("Getting url had an error")
         return None
-    
+
 def delete_url(sqlite_file: str, alias: str): #delete entry in the database from specified alias
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
@@ -116,16 +127,27 @@ def maybe_delete_expired_url(sqlite_file, sqlite_row) -> bool: #returns True if 
     else:
         return False
     
-def get_number_of_entries(sqlite_file):
+def get_number_of_entries(sqlite_file, search=None):
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
 
     count = 0
     try:
-        sql = "SELECT COUNT(*) FROM urls"
+        if search:
+            sql = f"""
+            SELECT COUNT(*) FROM urls 
+            WHERE LOWER(alias) LIKE LOWER('%{search}%') 
+            OR LOWER(url) LIKE LOWER('%{search}%')
+            """
+        else:
+            sql = "SELECT COUNT(*) FROM urls"
+
         cursor.execute(sql)
         result = cursor.fetchone()
         count = result[0]
-    except Exception:
-        logger.exception("Couldn't get number of urls")
+    except Exception as e:
+        logger.exception("Couldn't get number of urls: " + str(e))
+    finally:
+        cursor.close()
+        db.close()
     return count

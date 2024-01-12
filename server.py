@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import FastAPI, Request, HTTPException, Response
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,7 +12,6 @@ from modules.generate_alias import generate_alias
 import modules.sqlite_helpers as sqlite_helpers
 from modules.constants import HttpResponse, http_code_to_enum
 from modules.metrics import MetricsHandler
-
 
 app = FastAPI()
 args = get_args()
@@ -65,12 +65,17 @@ async def create_url(request: Request):
     except ValueError:
         logging.exception(f"returning 422 due to invalid alias of \"{alias}\"")
         raise HTTPException(status_code=HttpResponse.INVALID_ARGUMENT_EXCEPTION.code)
-   
-@app.get("/list")
-async def get_all_urls():
-    with MetricsHandler.query_time.labels("list").time():
-      return sqlite_helpers.get_urls(DATABASE_FILE)
 
+@app.get("/list")
+async def get_urls(search: Optional[str] = None, page: int = 0):
+    if page < 0:
+        raise HTTPException(status_code=400, detail="Invalid page number")
+    if search and not search.isalnum():
+        raise HTTPException(status_code=400, detail=f'search term "{search}" is invalid. only alphanumeric chars are allowed')
+    with MetricsHandler.query_time.labels("list").time():
+        urls = sqlite_helpers.get_urls(DATABASE_FILE, page, search=search)
+        total_urls = sqlite_helpers.get_number_of_entries(DATABASE_FILE, search=search)
+        return {"data": urls, "total": total_urls, "rows_per_page": sqlite_helpers.ROWS_PER_PAGE}
 
 @app.get("/find/{alias}")
 async def get_url(alias: str):
@@ -81,7 +86,7 @@ async def get_url(alias: str):
     if url_output is None:
         raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
     return RedirectResponse(url_output)
-    
+
 
 @app.post("/delete/{alias}")
 async def delete_url(alias: str):
