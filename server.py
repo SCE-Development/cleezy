@@ -67,7 +67,7 @@ async def get_urls(search: Optional[str] = None, page: int = 0):
     with MetricsHandler.query_time.labels("list").time():
         urls = sqlite_helpers.get_urls(DATABASE_FILE, page, search=search)
         total_urls = sqlite_helpers.get_number_of_entries(DATABASE_FILE, search=search)
-        return {"data": urls, "total": total_urls}
+        return {"data": urls, "total": total_urls, "rows_per_page": sqlite_helpers.ROWS_PER_PAGE}
 
 @app.get("/find/{alias}")
 async def get_url(alias: str):
