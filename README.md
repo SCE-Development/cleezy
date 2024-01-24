@@ -16,7 +16,7 @@ sce link z
 ```
 sce run z
 ```
-- [ ] ensure the server is running locally at `localhost:8000`
+- [ ] ensure the server is running locally at `http://localhost:8000`
 
 ## APIs
 ### To add URL
