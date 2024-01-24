@@ -10,6 +10,7 @@ sce clone z
 - [ ] link the project to the tool
 ```
 cd PATH_TO_CLEEZY_HERE
+sce link z
 ```
 - [ ] run the project
 ```
