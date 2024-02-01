@@ -54,9 +54,10 @@ async def create_url(request: Request):
             raise ValueError("alias must only contain alphanumeric characters")
 
         with MetricsHandler.query_time.labels("create").time():
-            if sqlite_helpers.insert_url(DATABASE_FILE, urljson['url'], alias):
+            response = sqlite_helpers.insert_url(DATABASE_FILE, urljson['url'], alias)
+            if response is not None:
                 MetricsHandler.url_count.inc(1)
-                return { "url": urljson['url'], "alias": alias }
+                return { "url": urljson['url'], "alias": alias, "created_at": response}
             else:
                 raise HTTPException(status_code=HttpResponse.CONFLICT.code )
     except KeyError:

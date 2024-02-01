@@ -42,12 +42,12 @@ def insert_url(sqlite_file: str, url: str, alias: str):
         val = (url, alias, timestamp)
         cursor.execute(sql, val)
         db.commit()
-        return True
+        return timestamp
     except sqlite3.IntegrityError:
-        return False
+        return None
     except Exception:
         logger.exception("Inserting url had an error")
-        return False
+        return None
 
 def get_urls(sqlite_file, page=0, search=None):
     db = sqlite3.connect(sqlite_file)
