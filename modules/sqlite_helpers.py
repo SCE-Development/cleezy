@@ -59,10 +59,11 @@ def get_urls(sqlite_file, page=0, search=None):
         SELECT * FROM urls 
         WHERE LOWER(alias) LIKE LOWER('%{search}%') 
         OR LOWER(url) LIKE LOWER('%{search}%')
+        ORDER BY created_at DESC
         LIMIT {ROWS_PER_PAGE} OFFSET {offset}
         """
     else:
-        sql = f"SELECT * FROM urls LIMIT {ROWS_PER_PAGE} OFFSET {offset}"
+        sql = f"SELECT * FROM urls ORDER BY created_at DESC LIMIT {ROWS_PER_PAGE} OFFSET {offset}"
     cursor.execute(sql)
     
     result = cursor.fetchall()
