@@ -16,7 +16,8 @@ def maybe_create_table(sqlite_file: str) -> bool:
             id INTEGER PRIMARY KEY, 
             url TEXT NOT NULL, 
             alias TEXT NOT NULL, 
-            created_at DATETIME NOT NULL);
+            created_at DATETIME NOT NULL,
+            used INTEGER DEFAULT 1);
         """
 
         create_index_query = """
@@ -74,7 +75,8 @@ def get_urls(sqlite_file, page=0, search=None):
                 "id": row[0],
                 "url": row[1],
                 "alias": row[2],
-                "created_at": row[3]
+                "created_at": row[3],
+                "used": row[4]
             }
             url_array.append(url_data)
         except KeyError:
@@ -152,3 +154,18 @@ def get_number_of_entries(sqlite_file, search=None):
         cursor.close()
         db.close()
     return count
+
+def track_number_of_uses(sqlite_file, alias: str, count=1):
+    db = sqlite3.connect(sqlite_file)
+    cursor = db.cursor()
+    
+    try:
+        sql = "UPDATE urls SET used = used + ? WHERE alias = ?"
+        cursor.execute(sql, (count, alias))
+        db.commit()
+    except Exception as e:
+        logger.exception("Couldn't update alias used count: " + str(e))
+        db.rollback()
+    finally:
+        cursor.close()
+        db.close()

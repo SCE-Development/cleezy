@@ -1,4 +1,4 @@
-version: '3.7'
+version: "3.7"
 services:
   app:
     container_name: cleezy-app-dev
@@ -6,9 +6,9 @@ services:
       context: .
       dockerfile: Dockerfile
     command:
-       - --database-file-path=/tmp/urldatabase.db
-       - --port=8000
-       - -vvv
+      - --database-file-path=/tmp/urldatabase.db
+      - --port=8000
+      - -vvv
     ports:
       - 8000:8000
     volumes:
@@ -17,6 +17,15 @@ services:
       - ./modules:/app/modules
     environment:
       - WATCHFILES_FORCE_POLLING=true
+  prometheus:
+    image: prom/prometheus:latest
+    restart: always
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - 9090:9090
 
 volumes:
   cleezy_data_dev:

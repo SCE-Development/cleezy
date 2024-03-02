@@ -12,6 +12,7 @@ from modules.generate_alias import generate_alias
 import modules.sqlite_helpers as sqlite_helpers
 from modules.constants import HttpResponse, http_code_to_enum
 from modules.metrics import MetricsHandler
+from modules.sqlite_helpers import track_number_of_uses
 
 app = FastAPI()
 args = get_args()
@@ -86,6 +87,7 @@ async def get_url(alias: str):
 
     if url_output is None:
         raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
+    track_number_of_uses(DATABASE_FILE, alias)
     return RedirectResponse(url_output)
 
 
