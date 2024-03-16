@@ -6,6 +6,7 @@ import logging
 import time
 import prometheus_client
 import uvicorn
+import sqlite3
 
 from modules.args import get_args
 from modules.generate_alias import generate_alias
@@ -13,6 +14,11 @@ import modules.sqlite_helpers as sqlite_helpers
 from modules.constants import HttpResponse, http_code_to_enum
 from modules.metrics import MetricsHandler
 from modules.sqlite_helpers import track_number_of_uses
+from queue import Queue
+import multiprocessing as mp
+from threading import Thread
+alias_queue = Queue()
+
 
 app = FastAPI()
 args = get_args()
@@ -87,7 +93,8 @@ async def get_url(alias: str):
 
     if url_output is None:
         raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
-    track_number_of_uses(DATABASE_FILE, alias)
+    #track_number_of_uses(DATABASE_FILE, alias)
+    alias_queue.put(alias)
     return RedirectResponse(url_output)
 
 
@@ -121,6 +128,27 @@ logging.basicConfig(
     level= logging.ERROR - (args.verbose*10),
 )
 
+def consumer():
+    db = sqlite3.connect(DATABASE_FILE)
+    try:
+        cursor = db.cursor()
+        while True:
+            alias = alias_queue.get()
+            if alias is None:
+                consumer_thread.terminate()
+                break
+            try:
+                sql = "UPDATE urls SET used = used + 1 WHERE alias = ?"
+                cursor.execute(sql, (alias,))
+                db.commit()
+            except sqlite3.Error as e:
+                print(f"Database error: {e}")
+            finally:
+                alias_queue.task_done()
+    finally:
+        db.close()
+
+    
 # we have a separate __name__ check here due to how FastAPI starts
 # a server. the file is first ran (where __name__ == "__main__")
 # and then calls `uvicorn.run`. the call to run() reruns the file,
@@ -132,6 +160,8 @@ logging.basicConfig(
 if __name__ == "server":
     initial_url_count = sqlite_helpers.get_number_of_entries(DATABASE_FILE)
     MetricsHandler.url_count.inc(initial_url_count)
+    consumer_thread = Thread(target=consumer, daemon=True)
+    consumer_thread.start()
 
 if __name__ == "__main__":
     logging.info(f"running on {args.host}, listening on port {args.port}")
