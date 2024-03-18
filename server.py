@@ -6,22 +6,20 @@ import logging
 import time
 import prometheus_client
 import uvicorn
-import sqlite3
+from queue import Queue
+from threading import Thread
 
 from modules.args import get_args
 from modules.generate_alias import generate_alias
 import modules.sqlite_helpers as sqlite_helpers
 from modules.constants import HttpResponse, http_code_to_enum
 from modules.metrics import MetricsHandler
-from modules.sqlite_helpers import track_number_of_uses
-from queue import Queue
-import multiprocessing as mp
-from threading import Thread
-alias_queue = Queue()
+from modules.sqlite_helpers import increment_used_column
 
 
 app = FastAPI()
 args = get_args()
+alias_queue = Queue()
 
 app.add_middleware(
     CORSMiddleware,
@@ -129,24 +127,17 @@ logging.basicConfig(
 )
 
 def consumer():
-    db = sqlite3.connect(DATABASE_FILE)
-    try:
-        cursor = db.cursor()
-        while True:
-            alias = alias_queue.get()
-            if alias is None:
-                consumer_thread.terminate()
-                break
-            try:
-                sql = "UPDATE urls SET used = used + 1 WHERE alias = ?"
-                cursor.execute(sql, (alias,))
-                db.commit()
-            except sqlite3.Error as e:
-                print(f"Database error: {e}")
-            finally:
-                alias_queue.task_done()
-    finally:
-        db.close()
+    while True:
+        alias = alias_queue.get()
+        if alias is None:  # Check for the termination signal
+            break  # Exit the loop to end the thread
+        try:
+            increment_used_column(DATABASE_FILE, alias)
+        except Exception as e:
+            logging.exception(f"Error updating used count for alias {alias}: {e}")
+        finally:
+            alias_queue.task_done()
+
 
     
 # we have a separate __name__ check here due to how FastAPI starts

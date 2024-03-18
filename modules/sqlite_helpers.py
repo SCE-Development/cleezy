@@ -155,7 +155,7 @@ def get_number_of_entries(sqlite_file, search=None):
         db.close()
     return count
 
-def track_number_of_uses(sqlite_file, alias: str, count=1):
+def increment_used_column(sqlite_file, alias: str, count=1):
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
     
