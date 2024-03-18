@@ -129,8 +129,8 @@ logging.basicConfig(
 def consumer():
     while True:
         alias = alias_queue.get()
-        if alias is None:  # Check for the termination signal
-            break  # Exit the loop to end the thread
+        if alias is None:  
+            break  
         try:
             increment_used_column(DATABASE_FILE, alias)
         except Exception as e:
