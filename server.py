@@ -91,7 +91,6 @@ async def get_url(alias: str):
 
     if url_output is None:
         raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
-    #track_number_of_uses(DATABASE_FILE, alias)
     alias_queue.put(alias)
     return RedirectResponse(url_output)
 
@@ -127,14 +126,16 @@ logging.basicConfig(
 )
 
 def consumer():
+    MetricsHandler.used_alias_queue_size.set(len(alias_queue))
     while True:
         alias = alias_queue.get()
         if alias is None:  
             break  
         try:
-            increment_used_column(DATABASE_FILE, alias)
-        except Exception as e:
-            logging.exception(f"Error updating used count for alias {alias}: {e}")
+            with MetricsHandler.query_time.labels("increment_used").time():
+                increment_used_column(DATABASE_FILE, alias)
+        except Exception:
+            logging.exception("Error updating used count for alias {alias}")
         finally:
             alias_queue.task_done()
 

@@ -163,8 +163,8 @@ def increment_used_column(sqlite_file, alias: str, count=1):
         sql = "UPDATE urls SET used = used + ? WHERE alias = ?"
         cursor.execute(sql, (count, alias))
         db.commit()
-    except Exception as e:
-        logger.exception("Couldn't update alias used count: " + str(e))
+    except Exception:
+        logger.exception("Couldn't update the used column for alias {alias}: ")
         db.rollback()
     finally:
         cursor.close()
