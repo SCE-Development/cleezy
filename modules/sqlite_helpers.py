@@ -76,7 +76,7 @@ def get_urls(sqlite_file, page=0, search=None):
                 "url": row[1],
                 "alias": row[2],
                 "created_at": row[3],
-                "used": row[4]
+                "used": row[4],
             }
             url_array.append(url_data)
         except KeyError:
@@ -161,6 +161,7 @@ def increment_used_column(sqlite_file, alias: str, count=1):
     
     try:
         sql = "UPDATE urls SET used = used + ? WHERE alias = ?"
+        logging.debug(f"incrementing the used column alias {alias} by {count}")
         cursor.execute(sql, (count, alias))
         db.commit()
     except Exception:
