@@ -6,15 +6,20 @@ import logging
 import time
 import prometheus_client
 import uvicorn
+from queue import Queue
+from threading import Thread
 
 from modules.args import get_args
 from modules.generate_alias import generate_alias
 import modules.sqlite_helpers as sqlite_helpers
 from modules.constants import HttpResponse, http_code_to_enum
 from modules.metrics import MetricsHandler
+from modules.sqlite_helpers import increment_used_column
+
 
 app = FastAPI()
 args = get_args()
+alias_queue = Queue()
 
 app.add_middleware(
     CORSMiddleware,
@@ -86,6 +91,7 @@ async def get_url(alias: str):
 
     if url_output is None:
         raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
+    alias_queue.put(alias)
     return RedirectResponse(url_output)
 
 
@@ -119,6 +125,21 @@ logging.basicConfig(
     level= logging.ERROR - (args.verbose*10),
 )
 
+def consumer():
+    while True:
+        alias = alias_queue.get()
+        if alias is None:  
+            break  
+        try:
+            with MetricsHandler.query_time.labels("increment_used").time():
+                increment_used_column(DATABASE_FILE, alias)
+        except Exception:
+            logging.exception("Error updating used count for alias {alias}")
+        finally:
+            alias_queue.task_done()
+
+
+    
 # we have a separate __name__ check here due to how FastAPI starts
 # a server. the file is first ran (where __name__ == "__main__")
 # and then calls `uvicorn.run`. the call to run() reruns the file,
@@ -130,6 +151,8 @@ logging.basicConfig(
 if __name__ == "server":
     initial_url_count = sqlite_helpers.get_number_of_entries(DATABASE_FILE)
     MetricsHandler.url_count.inc(initial_url_count)
+    consumer_thread = Thread(target=consumer, daemon=True)
+    consumer_thread.start()
 
 if __name__ == "__main__":
     logging.info(f"running on {args.host}, listening on port {args.port}")
