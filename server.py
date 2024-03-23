@@ -126,8 +126,8 @@ logging.basicConfig(
 )
 
 def consumer():
-    MetricsHandler.used_alias_queue_size.set(alias_queue.qsize())
     while True:
+        MetricsHandler.used_alias_queue_size.set(alias_queue.qsize())
         alias = alias_queue.get()
         if alias is None:  
             break  
