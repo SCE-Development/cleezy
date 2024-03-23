@@ -21,11 +21,6 @@ class Metrics(enum.Enum):
         prometheus_client.Counter,
         ['path', 'code'],
     )
-    USED_ALIAS_QUEUE_SIZE = (
-        "used_alias_queue_size",
-        "Size of the used alias queue",
-        prometheus_client.Gauge,
-    )
 
     def __init__(self, title, description, prometheus_type, labels=()):
         # we use the above default value for labels because it matches what's used
