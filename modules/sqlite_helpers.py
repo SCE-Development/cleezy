@@ -165,7 +165,7 @@ def increment_used_column(sqlite_file, alias: str, count=1):
         cursor.execute(sql, (count, alias))
         db.commit()
     except Exception:
-        logger.exception("Couldn't update the used column for alias {alias}: ")
+        logger.exception(f"Couldn't update the used column for alias {alias}: ")
         db.rollback()
     finally:
         cursor.close()
