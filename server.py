@@ -175,8 +175,14 @@ async def qr(alias: str):
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
     status_code_enum = http_code_to_enum[exc.status_code]
+    content = status_code_enum.content
+    if status_code_enum == HttpResponse.NOT_FOUND:
+        content = content.format(
+            requested_url=str(request.url),
+            base_url=str(request.base_url)
+        )
     return HTMLResponse(
-        content=status_code_enum.content, status_code=status_code_enum.code
+        content=content, status_code=status_code_enum.code
     )
 
 
