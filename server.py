@@ -178,9 +178,10 @@ async def http_exception_handler(request, exc):
     content = status_code_enum.content
     if status_code_enum == HttpResponse.NOT_FOUND:
         original_url = request.headers.get("x-original-url", request.url)
+        base_url = request.headers.get("x-base-url", request.base_url)
         content = content.format(
             requested_url=str(original_url),
-            base_url=str(request.base_url)
+            base_url=str(base_url)
         )
     return HTMLResponse(
         content=content, status_code=status_code_enum.code
