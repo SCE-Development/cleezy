@@ -1,10 +1,18 @@
 import enum
 
+NOT_FOUND_HTML = """
+<h1>Url not found.</h1>
+
+<p>The requested URL "{}" could not be found on this server.</p>
+
+<p>Return to <a href="{}">homepage</a></p>
+"""
+
 class HttpResponse(enum.Enum):
   
   OK = (200, "success")
   BAD_REQUEST = (400, "<h1>No URL was found in your request</h1>")
-  NOT_FOUND = (404, "<h1>URL not found</h1>")
+  NOT_FOUND = (404, NOT_FOUND_HTML)
   CONFLICT = (409, "<h1>Alias already exists</h1>")
   INVALID_ARGUMENT_EXCEPTION = (422, "<h1>Alias is invalid</h1>")
   INTERNAL_SERVER_ERROR = (500, "<h1>Internal server error</h1>")
