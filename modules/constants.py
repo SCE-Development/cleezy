@@ -3,9 +3,9 @@ import enum
 NOT_FOUND_HTML = """
 <h1>Url not found.</h1>
 
-<p>The requested URL "{}" could not be found on this server.</p>
+<p>The requested URL "{requested_url}" could not be found on this server.</p>
 
-<p>Return to <a href="{}">homepage</a></p>
+<p>Return to <a href="{base_url}">homepage</a></p>
 """
 
 class HttpResponse(enum.Enum):
