@@ -32,5 +32,18 @@ services:
     ports:
       - 9090:9090
 
+  nginx:
+    container_name: cleezy-nginx-dev
+    image: 'nginx:alpine'
+    volumes:
+      - ./nginx.dev.conf:/etc/nginx/nginx.conf:ro
+      - ./logs:/var/log/nginx
+    command: [ "nginx", "-g", "daemon off; error_log /var/log/nginx/error.log debug;" ]
+    environment:
+      - NGINX_DEBUG=1
+    ports:
+      - '5000:5000'
+    restart: 'on-failure'
+
 volumes:
   cleezy_data_dev:
