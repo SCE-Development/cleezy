@@ -123,14 +123,15 @@ def delete_url(sqlite_file: str, alias: str): #delete entry in the database from
 def maybe_delete_expired_url(sqlite_file, sqlite_row) -> bool: #returns True if url expired and deleted, otherwise False
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
+    utc_tz = ZoneInfo('UTC')
 
     expiration_datetime = None
     # sqlite_row[5] represents the expiration datetime e.g., "2024-11-04 18:05:24.006593"
     if sqlite_row[5] is not None:
         expiration_datetime = datetime.strptime(sqlite_row[5], "%Y-%m-%d %H:%M:%S.%f")
-        expiration_datetime = expiration_datetime.replace(tzinfo=ZoneInfo('utc'))
+        expiration_datetime = expiration_datetime.replace(tzinfo=utc_tz)
 
-    now = datetime.now(tz=ZoneInfo('utc'))
+    now = datetime.now(tz=utc_tz)
     if expiration_datetime is not None and expiration_datetime < now:
         sql = "DELETE FROM urls WHERE alias = ?"
         cursor.execute(sql, (sqlite_row[2], ))
