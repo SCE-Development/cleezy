@@ -1,14 +1,13 @@
-import sqlite3
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+from datetime import datetime
 import logging
-from modules.args import get_args
+import sqlite3
+import typing
+from zoneinfo import ZoneInfo
+
 
 ROWS_PER_PAGE = 25
 
 logger = logging.getLogger(__name__)
-args = get_args()
-expiration_date_timezone = ZoneInfo(args.expiration_date_timezone)
 
 def maybe_create_table(sqlite_file: str) -> bool:
     db = sqlite3.connect(sqlite_file)
@@ -39,7 +38,7 @@ def maybe_create_table(sqlite_file: str) -> bool:
         return False
 
 
-def insert_url(sqlite_file: str, url: str, alias: str, expiration_date: str):
+def insert_url(sqlite_file: str, url: str, alias: str, expiration_date: typing.Union[str, None] = None):
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
     timestamp = datetime.now()
@@ -93,7 +92,6 @@ def get_urls(sqlite_file, page=0, search=None, sort_by="created_at", order="DESC
 def get_url(sqlite_file: str, alias: str): #return the string for url entry for a specified alias
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
-    
     try:
         sql = "SELECT * FROM urls WHERE alias = ?"
         cursor.execute(sql, (alias,))
@@ -125,14 +123,15 @@ def delete_url(sqlite_file: str, alias: str): #delete entry in the database from
 def maybe_delete_expired_url(sqlite_file, sqlite_row) -> bool: #returns True if url expired and deleted, otherwise False
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
+    utc_tz = ZoneInfo('UTC')
 
     expiration_datetime = None
     # sqlite_row[5] represents the expiration datetime e.g., "2024-11-04 18:05:24.006593"
     if sqlite_row[5] is not None:
         expiration_datetime = datetime.strptime(sqlite_row[5], "%Y-%m-%d %H:%M:%S.%f")
-        expiration_datetime = expiration_datetime.replace(tzinfo=expiration_date_timezone)
+        expiration_datetime = expiration_datetime.replace(tzinfo=utc_tz)
 
-    now = datetime.now(expiration_date_timezone)
+    now = datetime.now(tz=utc_tz)
     if expiration_datetime is not None and expiration_datetime < now:
         sql = "DELETE FROM urls WHERE alias = ?"
         cursor.execute(sql, (sqlite_row[2], ))
