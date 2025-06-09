@@ -156,6 +156,17 @@ async def delete_url(alias: str):
 async def qr(alias: str):
     logging.debug(f"/qr code generation called with alias: {alias}")
     with MetricsHandler.query_time.labels("qr").time():
+
+        return '''
+        <html>
+  <head>
+    <meta property="og:image" content="https://sce.sjsu.edu/qr/discord.png" />
+  </head>
+  <body>
+    <img src="https://sce.sjsu.edu/qr/discord.png" alt="Discord QR Code" />
+  </body>
+</html>'''
+
         maybe_image_data = qr_code_cache.find(alias)
         if maybe_image_data is not None:
             return FileResponse(
