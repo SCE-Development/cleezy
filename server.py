@@ -160,7 +160,7 @@ async def qr(alias: str):
         if maybe_image_data is not None:
             return FileResponse(
             maybe_image_data,
-            media_type='image/jpeg',
+            media_type='image/png',
             )
         
         url_output = sqlite_helpers.get_url(DATABASE_FILE, alias)
@@ -169,7 +169,7 @@ async def qr(alias: str):
         image_data = qr_code_cache.add(alias)
         return FileResponse(
             image_data,
-            media_type='image/jpeg',
+            media_type='image/png',
         )
 
 @app.exception_handler(HTTPException)
