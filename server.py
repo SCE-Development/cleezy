@@ -160,10 +160,10 @@ async def qr(alias: str):
             content='''
             <html>
               <head>
-            <meta property="og:image" content="https://sce.sjsu.edu/qr/discord.png" />
+            <meta property="og:image" content="https://sce.sjsu.edu/qr/discord" />
               </head>
               <body>
-            <img src="https://sce.sjsu.edu/qr/discord.png" alt="Discord QR Code" />
+            <img src="https://sce.sjsu.edu/qr/discord" alt="Discord QR Code" />
               </body>
             </html>
             ''',
