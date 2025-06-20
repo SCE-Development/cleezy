@@ -9,24 +9,16 @@ ROWS_PER_PAGE = 25
 
 logger = logging.getLogger(__name__)
 
-# def parse_datetime(dt_str):
-#     for format in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S"):
-#         try:
-#             return datetime.strptime(dt_str, format)
-#         except ValueError:
-#             continue
-#     raise ValueError(f"time data {dt_str!r} doesn't match expected format")
-
 def delete_expired_urls(sqlite_file: str):
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
 
     cursor.execute("""
-        DELETE FROM urls WHERE expires_at IS NOT NULL
+    DELETE FROM urls 
+        WHERE expires_at IS NOT NULL
         AND expires_at < datetime('now')
     """)
     db.commit()
-    # db.close()
 
 def maybe_create_table(sqlite_file: str) -> bool:
     db = sqlite3.connect(sqlite_file)
