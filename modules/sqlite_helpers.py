@@ -9,6 +9,25 @@ ROWS_PER_PAGE = 25
 
 logger = logging.getLogger(__name__)
 
+# def parse_datetime(dt_str):
+#     for format in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S"):
+#         try:
+#             return datetime.strptime(dt_str, format)
+#         except ValueError:
+#             continue
+#     raise ValueError(f"time data {dt_str!r} doesn't match expected format")
+
+def delete_expired_urls(sqlite_file: str):
+    db = sqlite3.connect(sqlite_file)
+    cursor = db.cursor()
+
+    cursor.execute("""
+        DELETE FROM urls WHERE expires_at IS NOT NULL
+        AND expires_at < datetime('now')
+    """)
+    db.commit()
+    # db.close()
+
 def maybe_create_table(sqlite_file: str) -> bool:
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
@@ -83,6 +102,7 @@ def get_urls(sqlite_file, page=0, search=None, sort_by="created_at", order="DESC
                 "alias": row[2],
                 "created_at": row[3],
                 "used": row[4],
+                "expires_at": row[5]
             }
             url_array.append(url_data)
         except KeyError:
@@ -128,7 +148,7 @@ def maybe_delete_expired_url(sqlite_file, sqlite_row) -> bool: #returns True if 
     expiration_datetime = None
     # sqlite_row[5] represents the expiration datetime e.g., "2024-11-04 18:05:24.006593"
     if sqlite_row[5] is not None:
-        expiration_datetime = datetime.strptime(sqlite_row[5], "%Y-%m-%d %H:%M:%S.%f")
+        expiration_datetime = datetime.fromisoformat(sqlite_row[5])
         expiration_datetime = expiration_datetime.replace(tzinfo=utc_tz)
 
     now = datetime.now(tz=utc_tz)
