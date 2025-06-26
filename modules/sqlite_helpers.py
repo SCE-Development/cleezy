@@ -9,17 +9,6 @@ ROWS_PER_PAGE = 25
 
 logger = logging.getLogger(__name__)
 
-def delete_expired_urls(sqlite_file: str):
-    db = sqlite3.connect(sqlite_file)
-    cursor = db.cursor()
-
-    cursor.execute("""
-    DELETE FROM urls 
-        WHERE expires_at IS NOT NULL
-        AND expires_at < datetime('now')
-    """)
-    db.commit()
-
 def maybe_create_table(sqlite_file: str) -> bool:
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()

@@ -14,7 +14,7 @@ from modules.generate_alias import generate_alias
 import modules.sqlite_helpers as sqlite_helpers
 from modules.constants import HttpResponse, http_code_to_enum
 from modules.metrics import MetricsHandler
-from modules.sqlite_helpers import increment_used_column, delete_expired_urls
+from modules.sqlite_helpers import increment_used_column
 from modules.cache import Cache
 from modules.qr_code import QRCode
 
@@ -99,7 +99,6 @@ async def get_urls(
     sort_by: str = "created_at",
     order: str = "DESC",
 ):
-    sqlite_helpers.delete_expired_urls(DATABASE_FILE)
     valid_sort_attributes = {"id", "url", "alias", "created_at", "used"}
     if order not in {"DESC", "ASC"}:
         raise HTTPException(status_code=400, detail="Invalid order")
@@ -126,7 +125,6 @@ async def get_urls(
 
 @app.get("/find/{alias}")
 async def get_url(alias: str):
-    sqlite_helpers.delete_expired_urls(DATABASE_FILE)
     logging.debug(f"/find called with alias: {alias}")
     url_output = cache.find(alias)  # try to find url in cache
     if url_output is not None:
