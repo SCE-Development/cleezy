@@ -127,7 +127,7 @@ def maybe_delete_expired_url(sqlite_file, sqlite_row) -> bool: #returns True if 
     utc_tz = ZoneInfo('UTC')
 
     expiration_datetime = None
-    # sqlite_row[5] represents the expiration datetime e.g., "2024-11-04 18:05:24.006593"
+    # sqlite_row[5] represents the expiration datetime in UTC timezone e.g., "2024-11-04 18:05:24"
     if sqlite_row[5] is not None:
         expiration_datetime = datetime.fromisoformat(sqlite_row[5])
         expiration_datetime = expiration_datetime.replace(tzinfo=utc_tz)
