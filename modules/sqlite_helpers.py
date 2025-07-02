@@ -43,6 +43,8 @@ def insert_url(sqlite_file: str, url: str, alias: str, expiration_date: typing.U
     cursor = db.cursor()
     timestamp = datetime.now()
     if expiration_date is not None:
+        if isinstance(expiration_date, str) and expiration_date.endswith('Z'):
+            expiration_date = expiration_date[:-1] + '+00:00'
         expiration_date = datetime.fromisoformat(expiration_date)
     try:
         sql = "INSERT INTO urls(url, alias, created_at, expires_at) VALUES (?, ?, ?, ?)"
