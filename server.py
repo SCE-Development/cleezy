@@ -99,7 +99,7 @@ async def get_urls(
     sort_by: str = "created_at",
     order: str = "DESC",
 ):
-    valid_sort_attributes = {"id", "url", "alias", "created_at", "used"}
+    valid_sort_attributes = {"id", "url", "alias", "created_at", "expires_at", "used"}
     if order not in {"DESC", "ASC"}:
         raise HTTPException(status_code=400, detail="Invalid order")
     if sort_by not in valid_sort_attributes:
