@@ -68,7 +68,7 @@ async def create_url(request: Request):
                 alias = generate_alias(urljson["url"])
         if not alias.isalnum():
             raise ValueError("alias must only contain alphanumeric characters")
-        expiration_date = urljson.get("expiration_date")
+        expiration_date = urljson.get("expires_at")
 
         with MetricsHandler.query_time.labels("create").time():
             response = sqlite_helpers.insert_url(
@@ -99,7 +99,7 @@ async def get_urls(
     sort_by: str = "created_at",
     order: str = "DESC",
 ):
-    valid_sort_attributes = {"id", "url", "alias", "created_at", "used"}
+    valid_sort_attributes = {"id", "url", "alias", "created_at", "expires_at", "used"}
     if order not in {"DESC", "ASC"}:
         raise HTTPException(status_code=400, detail="Invalid order")
     if sort_by not in valid_sort_attributes:
@@ -128,6 +128,10 @@ async def get_url(alias: str):
     logging.debug(f"/find called with alias: {alias}")
     url_output = cache.find(alias)  # try to find url in cache
     if url_output is not None:
+        valid = sqlite_helpers.get_url(DATABASE_FILE, alias)
+        if valid is None:
+            cache.delete(alias)
+            raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
         alias_queue.put(alias)
         return RedirectResponse(url_output)
 

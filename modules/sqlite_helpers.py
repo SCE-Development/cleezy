@@ -43,6 +43,8 @@ def insert_url(sqlite_file: str, url: str, alias: str, expiration_date: typing.U
     cursor = db.cursor()
     timestamp = datetime.now()
     if expiration_date is not None:
+        if isinstance(expiration_date, str) and expiration_date.endswith('Z'):
+            expiration_date = expiration_date[:-1] + '+00:00'
         expiration_date = datetime.fromisoformat(expiration_date)
     try:
         sql = "INSERT INTO urls(url, alias, created_at, expires_at) VALUES (?, ?, ?, ?)"
@@ -83,6 +85,7 @@ def get_urls(sqlite_file, page=0, search=None, sort_by="created_at", order="DESC
                 "alias": row[2],
                 "created_at": row[3],
                 "used": row[4],
+                "expires_at": row[5]
             }
             url_array.append(url_data)
         except KeyError:
@@ -126,9 +129,14 @@ def maybe_delete_expired_url(sqlite_file, sqlite_row) -> bool: #returns True if 
     utc_tz = ZoneInfo('UTC')
 
     expiration_datetime = None
-    # sqlite_row[5] represents the expiration datetime e.g., "2024-11-04 18:05:24.006593"
+    # sqlite_row[5] represents the expiration datetime in UTC timezone e.g., "2024-11-04 05:09:00+00:00"
+    # The following date and datetime formats are now supported:
+    # 2024-11-04
+    # 2024-11-04T18:05:24
+    # 2024-11-04T18:05:24.123456
+    # 2024-11-04T18:05:24+02:00
     if sqlite_row[5] is not None:
-        expiration_datetime = datetime.strptime(sqlite_row[5], "%Y-%m-%d %H:%M:%S.%f")
+        expiration_datetime = datetime.fromisoformat(sqlite_row[5])
         expiration_datetime = expiration_datetime.replace(tzinfo=utc_tz)
 
     now = datetime.now(tz=utc_tz)
