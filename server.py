@@ -18,6 +18,7 @@ from modules.metrics import MetricsHandler
 from modules.sqlite_helpers import increment_used_column
 from modules.cache import Cache
 from modules.qr_code import QRCode
+import base64
 
 
 app = FastAPI()
@@ -183,8 +184,13 @@ async def qr(alias: str):
 
         maybe_image_data = qr_code_cache.find(alias)
         if maybe_image_data is not None:
+            binary_fc       = open(maybe_image_data, 'rb').read()  # fc aka file_content
+            base64_utf8_str = base64.b64encode(binary_fc).decode('utf-8')
+
+            dataurl = f'data:image/png;base64,{base64_utf8_str}'
+
             return HTMLResponse(
-                content=html_content(maybe_image_data)
+                content=html_content(dataurl)
             )
 
         url_output = sqlite_helpers.get_url(DATABASE_FILE, alias)
