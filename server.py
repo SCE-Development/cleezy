@@ -169,7 +169,7 @@ async def qr(alias: str):
                 <head>
                     <meta name="viewport" content="width=device-width, minimum-scale=0.1">
                     <title>{alias} (410×410)</title>
-                    <meta property="og:image" content="" />
+                    <meta property="og:image" content="https://cdn.arstechnica.net/wp-content/uploads/2025/05/Chromebook-challenge-1152x648-1746806446.jpg" />
                     <meta name="theme-color" content="#FF0000">
                 </head>
                 <body style="margin: 0px; height: 100%; background-color: rgb(14, 14, 14);">
