@@ -169,6 +169,10 @@ async def qr(alias: str):
                 <head>
                     <meta name="viewport" content="width=device-width, minimum-scale=0.1">
                     <title>{alias} (410×410)</title>
+                    <meta property="og:title" content="thos" />
+                    <meta property="og:description" content="beans" />
+                    <meta property="og:type" content="website" />
+                    <meta property="og:url" content="https://sce.sjsu.edu/qr/EMBEDTEST2" />
                     <meta property="og:image" content="https://cdn.arstechnica.net/wp-content/uploads/2025/05/Chromebook-challenge-1152x648-1746806446.jpg" />
                     <meta name="theme-color" content="#FF0000">
                 </head>
