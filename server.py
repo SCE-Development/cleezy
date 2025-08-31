@@ -18,7 +18,6 @@ from modules.metrics import MetricsHandler
 from modules.sqlite_helpers import increment_used_column
 from modules.cache import Cache
 from modules.qr_code import QRCode
-import base64
 
 
 app = FastAPI()
@@ -40,11 +39,11 @@ cache = Cache(args.cache_size)
 DATABASE_FILE = args.database_file_path
 sqlite_helpers.maybe_create_table(DATABASE_FILE)
 qr_code_cache = QRCode(
-  base_url=args.qr_code_base_url,
-  qr_cache_path=args.qr_code_cache_path,
-  max_size=args.qr_code_cache_size,
-  cache_state_file=args.qr_code_cache_state_file,
-  qr_image_path=args.qr_code_center_image_path,
+    base_url=args.qr_code_base_url,
+    qr_cache_path=args.qr_code_cache_path,
+    max_size=args.qr_code_cache_size,
+    cache_state_file=args.qr_code_cache_state_file,
+    qr_image_path=args.qr_code_center_image_path,
 )
 
 
@@ -170,7 +169,7 @@ async def qr(alias: str):
                 <head>
                     <meta name="viewport" content="width=device-width, minimum-scale=0.1">
                     <title>{alias} (410×410)</title>
-                    <meta property="og:image" content="https://sce.sjsu.edu/tmp{img_data}" />
+                    <meta property="og:image" content="" />
                     <meta name="theme-color" content="#FF0000">
                 </head>
                 <body style="margin: 0px; height: 100%; background-color: rgb(14, 14, 14);">
@@ -184,13 +183,9 @@ async def qr(alias: str):
 
         maybe_image_data = qr_code_cache.find(alias)
         if maybe_image_data is not None:
-            binary_fc       = open(maybe_image_data, 'rb').read()  # fc aka file_content
-            base64_utf8_str = base64.b64encode(binary_fc).decode('utf-8')
-
-            dataurl = f'data:image/png;base64,{base64_utf8_str}'
-
+            logging.info(maybe_image_data)
             return HTMLResponse(
-                content=html_content(dataurl)
+                content=html_content(maybe_image_data)
             )
 
         url_output = sqlite_helpers.get_url(DATABASE_FILE, alias)
