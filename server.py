@@ -183,7 +183,7 @@ async def qr(alias: str):
 
         maybe_image_data = qr_code_cache.find(alias)
         if maybe_image_data is not None:
-            logging.debug(maybe_image_data)
+            logging.info(maybe_image_data)
 
             return HTMLResponse(
                 content=html_content(maybe_image_data)
