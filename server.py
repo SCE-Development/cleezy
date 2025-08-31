@@ -24,7 +24,7 @@ app = FastAPI()
 args = get_args()
 alias_queue = Queue()
 
-app.mount(args.qr_code_cache_path, StaticFiles(directory=args.qr_code_cache_path), name="static")
+app.mount('/tmp', StaticFiles(directory="../tmp"), name="tmp")
 
 app.add_middleware(
     CORSMiddleware,
@@ -183,8 +183,6 @@ async def qr(alias: str):
 
         maybe_image_data = qr_code_cache.find(alias)
         if maybe_image_data is not None:
-            logging.info(maybe_image_data)
-
             return HTMLResponse(
                 content=html_content(maybe_image_data)
             )
