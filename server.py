@@ -175,6 +175,7 @@ async def qr(alias: str):
                     <meta property="og:url" content="https://sce.sjsu.edu/qr/EMBEDTEST2" />
                     <meta property="og:image" content="https://cdn.arstechnica.net/wp-content/uploads/2025/05/Chromebook-challenge-1152x648-1746806446.jpg" />
                     <meta name="theme-color" content="#FF0000">
+                    <meta name="twitter:card" content="summary_large_image" />
                 </head>
                 <body style="margin: 0px; height: 100%; background-color: rgb(14, 14, 14);">
                     <img 
