@@ -2,6 +2,7 @@ from typing import Optional
 from fastapi import FastAPI, Request, HTTPException, Response
 from fastapi.responses import RedirectResponse, HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import logging
 import time
 import prometheus_client
@@ -22,6 +23,8 @@ from modules.qr_code import QRCode
 app = FastAPI()
 args = get_args()
 alias_queue = Queue()
+
+app.mount(args.qr_code_cache_path, StaticFiles(directory=args.qr_code_cache_path), name="static")
 
 app.add_middleware(
     CORSMiddleware,
@@ -160,21 +163,39 @@ async def delete_url(alias: str):
 async def qr(alias: str):
     logging.debug(f"/qr code generation called with alias: {alias}")
     with MetricsHandler.query_time.labels("qr").time():
+        # TODO: still need to test live
+        html_content = lambda img_data : f"""
+            <html style="height: 100%;">
+                <head>
+                    <meta name="viewport" content="width=device-width, minimum-scale=0.1">
+                    <title>{alias} (410×410)</title>
+                    <meta property="og:image" content="https://sce.sjsu.edu/tmp{img_data}" />
+                    <meta name="theme-color" content="#FF0000">
+                </head>
+                <body style="margin: 0px; height: 100%; background-color: rgb(14, 14, 14);">
+                    <img 
+                        style="display: block;-webkit-user-select: none;margin: auto;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;"
+                        src="{img_data}"
+                    >
+                </body>
+            </html>
+            """
+
         maybe_image_data = qr_code_cache.find(alias)
         if maybe_image_data is not None:
-            return FileResponse(
-            maybe_image_data,
-            media_type='image/jpeg',
+            return HTMLResponse(
+                content=html_content(maybe_image_data)
             )
-        
+
         url_output = sqlite_helpers.get_url(DATABASE_FILE, alias)
         if url_output is None:
             raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
         image_data = qr_code_cache.add(alias)
-        return FileResponse(
-            image_data,
-            media_type='image/jpeg',
+
+        return HTMLResponse(
+            content=html_content(image_data)
         )
+
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
