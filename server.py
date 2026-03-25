@@ -162,19 +162,15 @@ async def qr(alias: str, request: Request, static: Optional[str] = None, user_ag
     logging.debug(f"/qr code generation called with alias: {alias}")
     with MetricsHandler.query_time.labels("qr").time():
         maybe_image_data = qr_code_cache.find(alias)
-        if maybe_image_data is not None:
-            return FileResponse(
-            maybe_image_data,
-            media_type='image/jpeg',
-            )
+        if maybe_image_data is None:
+            maybe_image_data = qr_code_cache.add(alias)
 
         url_output = sqlite_helpers.get_url(DATABASE_FILE, alias)
         if url_output is None:
             raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
-        image_data = qr_code_cache.add(alias)
 
         if static:
-            return FileResponse(image_data, media_type='image/png')
+            return FileResponse(maybe_image_data, media_type='image/png')
 
         # try embedding the discord url
         # We build the URL and add ?static=1 to prevent the loop
