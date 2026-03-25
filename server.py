@@ -8,6 +8,7 @@ import prometheus_client
 import uvicorn
 from queue import Queue
 from threading import Thread
+import re
 
 from modules.args import get_args
 from modules.generate_alias import generate_alias
@@ -157,7 +158,7 @@ async def delete_url(alias: str):
             raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
 
 @app.get("/qr/{alias}") 
-async def qr(alias: str):
+async def qr(alias: str, request: Request, static: Optional[str] = None, user_agent: Optional[str] = Header(None)):
     logging.debug(f"/qr code generation called with alias: {alias}")
     with MetricsHandler.query_time.labels("qr").time():
         maybe_image_data = qr_code_cache.find(alias)
@@ -166,15 +167,32 @@ async def qr(alias: str):
             maybe_image_data,
             media_type='image/jpeg',
             )
-        
+
         url_output = sqlite_helpers.get_url(DATABASE_FILE, alias)
         if url_output is None:
             raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
         image_data = qr_code_cache.add(alias)
-        return FileResponse(
-            image_data,
-            media_type='image/jpeg',
-        )
+
+        if static:
+            return FileResponse(image_data, media_type='image/png')
+
+        # try embedding the discord url
+        # We build the URL and add ?static=1 to prevent the loop
+        base_url = str(request.base_url).rstrip('/')
+        full_image_url = f"{base_url}/qr/{alias}?static=1"
+        
+        content = f"""
+        <html>
+            <head>
+                <meta property="og:title" content="QR Code: {alias}" />
+                <meta property="og:image" content="{full_image_url}" />
+                <meta property="og:type" content="website" />
+                <meta name="twitter:card" content="summary_large_image">
+            </head>
+            <body><img src="{full_image_url}"></body>
+        </html>
+        """
+        return HTMLResponse(content=content)
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
