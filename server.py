@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import FastAPI, Request, HTTPException, Response, Header
+from fastapi import FastAPI, Request, HTTPException, Response
 from fastapi.responses import RedirectResponse, HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import logging
@@ -8,7 +8,6 @@ import prometheus_client
 import uvicorn
 from queue import Queue
 from threading import Thread
-import re
 
 from modules.args import get_args
 from modules.generate_alias import generate_alias
@@ -158,48 +157,24 @@ async def delete_url(alias: str):
             raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
 
 @app.get("/qr/{alias}") 
-async def qr(alias: str, request: Request, static: Optional[str] = None, user_agent: Optional[str] = Header(None)):
-    logging.debug(f"/qr called with alias: {alias}, user_agent: {user_agent}, static: {static}, {request.base_url}")
-    
+async def qr(alias: str):
+    logging.debug(f"/qr code generation called with alias: {alias}")
     with MetricsHandler.query_time.labels("qr").time():
-        # 1. Ensure the alias exists in the DB first
+        maybe_image_data = qr_code_cache.find(alias)
+        if maybe_image_data is not None:
+            return FileResponse(
+            maybe_image_data,
+            media_type='image/jpeg',
+            )
+        
         url_output = sqlite_helpers.get_url(DATABASE_FILE, alias)
         if url_output is None:
-            raise HTTPException(status_code=404)
-
-        # 2. Get/Generate the image
-        maybe_image_data = qr_code_cache.find(alias)
-        if maybe_image_data is None:
-            maybe_image_data = qr_code_cache.add(alias)
-
-        # 3. Handle the "Trap Door" for the actual image file
-        # We also check if it's NOT a bot (like your curl/browser)
-        is_bot = user_agent and "Discordbot" in user_agent
-        
-        if static or not is_bot:
-            # Force PNG media type here
-            return FileResponse(maybe_image_data, media_type='image/png')
-
-        # 4. If we reach here, it IS a bot and NOT static -> Send HTML Embed
-        base_url = str(request.base_url).rstrip('/')
-        # Ensure we use https if you're behind an SSL proxy
-        if "https" in str(request.url):
-             base_url = base_url.replace("http://sce.sjsu.edu/", "https://sce.sjsu.edu/")
-             
-        full_image_url = f"{base_url}/qr/{alias}?static=1"
-        
-        content = f"""
-        <html>
-            <head>
-                <meta property="og:title" content="QR Code: {alias}" />
-                <meta property="og:image" content="{full_image_url}" />
-                <meta property="og:type" content="website" />
-                <meta name="twitter:card" content="summary_large_image">
-            </head>
-            <body><img src="{full_image_url}"></body>
-        </html>
-        """
-        return HTMLResponse(content=content)
+            raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
+        image_data = qr_code_cache.add(alias)
+        return FileResponse(
+            image_data,
+            media_type='image/jpeg',
+        )
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
