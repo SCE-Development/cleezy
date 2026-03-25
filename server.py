@@ -159,7 +159,7 @@ async def delete_url(alias: str):
 
 @app.get("/qr/{alias}") 
 async def qr(alias: str, request: Request, static: Optional[str] = None, user_agent: Optional[str] = Header(None)):
-    logging.debug(f"/qr called with alias: {alias}, user_agent: {user_agent}, static: {static}")
+    logging.debug(f"/qr called with alias: {alias}, user_agent: {user_agent}, static: {static}, {request.base_url}")
     
     with MetricsHandler.query_time.labels("qr").time():
         # 1. Ensure the alias exists in the DB first
