@@ -159,22 +159,33 @@ async def delete_url(alias: str):
 
 @app.get("/qr/{alias}") 
 async def qr(alias: str, request: Request, static: Optional[str] = None, user_agent: Optional[str] = Header(None)):
-    logging.debug(f"/qr code generation called with alias: {alias}")
+    logging.debug(f"/qr called with alias: {alias}, user_agent: {user_agent}, static: {static}")
+    
     with MetricsHandler.query_time.labels("qr").time():
+        # 1. Ensure the alias exists in the DB first
+        url_output = sqlite_helpers.get_url(DATABASE_FILE, alias)
+        if url_output is None:
+            raise HTTPException(status_code=404)
+
+        # 2. Get/Generate the image
         maybe_image_data = qr_code_cache.find(alias)
         if maybe_image_data is None:
             maybe_image_data = qr_code_cache.add(alias)
 
-        url_output = sqlite_helpers.get_url(DATABASE_FILE, alias)
-        if url_output is None:
-            raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
-
-        if static:
+        # 3. Handle the "Trap Door" for the actual image file
+        # We also check if it's NOT a bot (like your curl/browser)
+        is_bot = user_agent and "Discordbot" in user_agent
+        
+        if static or not is_bot:
+            # Force PNG media type here
             return FileResponse(maybe_image_data, media_type='image/png')
 
-        # try embedding the discord url
-        # We build the URL and add ?static=1 to prevent the loop
+        # 4. If we reach here, it IS a bot and NOT static -> Send HTML Embed
         base_url = str(request.base_url).rstrip('/')
+        # Ensure we use https if you're behind an SSL proxy
+        if "https" in str(request.url):
+             base_url = base_url.replace("http://", "https://")
+             
         full_image_url = f"{base_url}/qr/{alias}?static=1"
         
         content = f"""
