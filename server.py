@@ -184,7 +184,7 @@ async def qr(alias: str, request: Request, static: Optional[str] = None, user_ag
         base_url = str(request.base_url).rstrip('/')
         # Ensure we use https if you're behind an SSL proxy
         if "https" in str(request.url):
-             base_url = base_url.replace("http://", "https://")
+             base_url = base_url.replace("http://sce.sjsu.edu/", "https://sce.sjsu.edu/")
              
         full_image_url = f"{base_url}/qr/{alias}?static=1"
         
