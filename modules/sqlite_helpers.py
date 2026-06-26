@@ -23,12 +23,18 @@ def maybe_create_table(sqlite_file: str) -> bool:
             used INTEGER DEFAULT 1,
             expires_at DATETIME DEFAULT NULL);
         """
-
+        create_pastes_table_query = """
+        CREATE TABLE IF NOT EXISTS pastes (
+            paste_id TEXT PRIMARY KEY,
+            title TEXT,
+            created_at DATETIME DEFAULT NOT NULL,
+            expires_at DATETIME DEFAULT NULL);
+        """
         create_index_query = """
         CREATE UNIQUE INDEX IF NOT EXISTS idx_urls_alias
         ON urls (alias);
         """
-
+        cursor.execute(create_pastes_table_query)
         cursor.execute(create_table_query)
         cursor.execute(create_index_query)
         db.commit()
