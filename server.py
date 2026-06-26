@@ -77,8 +77,8 @@ async def create_url(request: Request):
             if response is not None:
                 MetricsHandler.url_count.inc(1)
                 return {
-                    "url": urljson["url"],
-                    "alias": alias,
+                    "url": myurl["url"],
+                    "alias": "https://sce.sjsu.edu/",
                     "created_at": response,
                     "expires_at": expiration_date,
                 }
