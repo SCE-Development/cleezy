@@ -27,7 +27,8 @@ def maybe_create_table(sqlite_file: str) -> bool:
         CREATE TABLE IF NOT EXISTS pastes (
             paste_id TEXT PRIMARY KEY,
             title TEXT,
-            created_at DATETIME DEFAULT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_DATE,
+            deleted_at DATETIME DEFAULT NULL,
             expires_at DATETIME DEFAULT NULL);
         """
         create_index_query = """
