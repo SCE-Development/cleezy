@@ -13,6 +13,15 @@ def maybe_create_table(sqlite_file: str) -> bool:
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
 
+#new paste table
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS pastes (
+        alias TEXT PRIMARY KEY,
+        title TEXT,
+        content TEXT NOT NULL
+    )
+""")
+
     try:
         create_table_query = """
         CREATE TABLE IF NOT EXISTS urls (
