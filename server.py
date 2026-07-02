@@ -53,7 +53,7 @@ async def track_response_codes(request: Request, call_next):
     return response
 
 
-@app.post("/create_url")
+@app.post("/url/create")
 async def create_url(request: Request):
     urljson = await request.json()
     logging.debug(f"/create_url called with body: {urljson}")
@@ -92,7 +92,7 @@ async def create_url(request: Request):
         raise HTTPException(status_code=HttpResponse.INVALID_ARGUMENT_EXCEPTION.code)
 
 
-@app.get("/list")
+@app.get("/url/list")
 async def get_urls(
     search: Optional[str] = None,
     page: int = 0,
@@ -123,7 +123,7 @@ async def get_urls(
         }
 
 
-@app.get("/find/{alias}")
+@app.get("/url/find/{alias}")
 async def get_url(alias: str):
     logging.debug(f"/find called with alias: {alias}")
     url_output = cache.find(alias)  # try to find url in cache
@@ -145,7 +145,7 @@ async def get_url(alias: str):
     return RedirectResponse(url_output)
 
 
-@app.post("/delete/{alias}")
+@app.post("/url/delete/{alias}")
 async def delete_url(alias: str):
     logging.debug(f"/delete called with alias: {alias}")
     with MetricsHandler.query_time.labels("delete").time():
