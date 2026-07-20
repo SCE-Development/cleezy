@@ -45,6 +45,24 @@ def maybe_create_table(sqlite_file: str) -> bool:
         logger.exception("Unable to create urls table")
         return False
 
+def insert_paste(sqlite_file: str, paste_id: str, title: str):
+    db = sqlite3.connect(sqlite_file)
+    cursor = db.cursor()
+
+    try:
+        sql = "INSERT INTO pastes(paste_id, title) VALUES (?, ?)"
+        val = (paste_id, title)
+        cursor.execute(sql, val)
+        db.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+    except Exception:
+        logger.exception("Inserting paste had an error")
+        return False
+    finally:
+        cursor.close()
+        db.close()
 
 def insert_url(sqlite_file: str, url: str, alias: str, expiration_date: typing.Union[str, None] = None):
     db = sqlite3.connect(sqlite_file)
