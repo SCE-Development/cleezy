@@ -1,6 +1,6 @@
 from typing import Optional
+from fastapi.responses import RedirectResponse, HTMLResponse, FileResponse, PlainTextResponse
 from fastapi import FastAPI, Request, HTTPException, Response
-from fastapi.responses import RedirectResponse, HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import time
@@ -18,6 +18,13 @@ from modules.sqlite_helpers import increment_used_column
 from modules.cache import Cache
 from modules.qr_code import QRCode
 
+from pathlib import Path
+import os
+
+PASTES_DIR = Path("pastes")
+PASTES_DIR.mkdir(exist_ok=True)
+
+MAX_PASTE_SIZE_BYTES = 10 * 1024 * 1024
 
 app = FastAPI()
 args = get_args()
@@ -155,6 +162,29 @@ async def delete_url(alias: str):
             return {"message": "URL deleted successfully"}
         else:
             raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
+@app.post("/paste/create")
+async def create_paste(request: Request):
+    body = await request.json()
+    text = body.get("text")
+    if text is None:
+        raise HTTPException(status_code=HttpResponse.BAD_REQUEST.code)
+
+    paste_id = sqlite_helpers.insert_text_paste(DATABASE_FILE)
+    if paste_id is None:
+        raise HTTPException(status_code=500)
+
+    paste_path = PASTES_DIR / str(paste_id)
+    paste_path.write_text(text, encoding="utf-8")
+
+    return {"id": paste_id}
+
+
+@app.get("/paste/view/{paste_id}")
+async def view_paste(paste_id: int):
+    paste_path = PASTES_DIR / str(paste_id)
+    if not paste_path.exists():
+        raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
+    return PlainTextResponse(paste_path.read_text(encoding="utf-8"))
 
 @app.get("/qr/{alias}") 
 async def qr(alias: str):

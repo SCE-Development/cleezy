@@ -13,15 +13,6 @@ def maybe_create_table(sqlite_file: str) -> bool:
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
 
-#new paste table
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS pastes (
-        alias TEXT PRIMARY KEY,
-        title TEXT,
-        content TEXT NOT NULL
-    )
-""")
-
     try:
         create_table_query = """
         CREATE TABLE IF NOT EXISTS urls (
@@ -44,9 +35,10 @@ cursor.execute("""
         CREATE UNIQUE INDEX IF NOT EXISTS idx_urls_alias
         ON urls (alias);
         """
-        cursor.execute(create_pastes_table_query)
         cursor.execute(create_table_query)
         cursor.execute(create_index_query)
+        cursor.execute(create_pastes_table_query)
+
         db.commit()
         return True
     except Exception:
@@ -201,6 +193,33 @@ def increment_used_column(sqlite_file, alias: str, count=1):
     except Exception:
         logger.exception(f"Couldn't update the used column for alias {alias}: ")
         db.rollback()
+    finally:
+        cursor.close()
+        db.close()
+def insert_text_paste(sqlite_file: str) -> typing.Optional[int]:
+    db = sqlite3.connect(sqlite_file)
+    cursor = db.cursor()
+    try:
+        cursor.execute("INSERT INTO pastes DEFAULT VALUES")
+        db.commit()
+        return cursor.lastrowid
+    except Exception:
+        logger.exception("Inserting paste had an error")
+        return None
+    finally:
+        cursor.close()
+        db.close()
+
+
+def paste_exists(sqlite_file: str, paste_id: int) -> bool:
+    db = sqlite3.connect(sqlite_file)
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT id FROM pastes WHERE id = ?", (paste_id,))
+        return cursor.fetchone() is not None
+    except Exception:
+        logger.exception("Getting paste had an error")
+        return False
     finally:
         cursor.close()
         db.close()
