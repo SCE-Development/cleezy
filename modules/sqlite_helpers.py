@@ -196,16 +196,22 @@ def increment_used_column(sqlite_file, alias: str, count=1):
     finally:
         cursor.close()
         db.close()
-def insert_text_paste(sqlite_file: str) -> typing.Optional[int]:
+
+def insert_paste(sqlite_file: str, paste_id: str, title: str):
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
+
     try:
-        cursor.execute("INSERT INTO pastes DEFAULT VALUES")
+        sql = "INSERT INTO pastes(paste_id, title) VALUES (?, ?)"
+        val = (paste_id, title)
+        cursor.execute(sql, val)
         db.commit()
-        return cursor.lastrowid
+        return True
+    except sqlite3.IntegrityError:
+        return False
     except Exception:
         logger.exception("Inserting paste had an error")
-        return None
+        return False
     finally:
         cursor.close()
         db.close()

@@ -162,24 +162,49 @@ async def delete_url(alias: str):
             return {"message": "URL deleted successfully"}
         else:
             raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
+
 @app.post("/paste/create")
 async def create_paste(request: Request):
-    body = await request.json()
-    text = body.get("text")
-    if text is None:
-        raise HTTPException(status_code=HttpResponse.BAD_REQUEST.code)
+    # 1. Enforce size limit (using UTF-8 byte length)
+    try:
+        payload = await request.json()
+    except Exception:
+        logging.exception("/paste/create couldnt parse json")
+        raise HTTPException(
+            status_code=HttpResponse.BAD_REQUEST.code,
+            detail="Invalid JSON payload"
+        )
+    text_bytes = payload.get("text", "").encode("utf-8")
+    if len(text_bytes) > MAX_PASTE_SIZE_BYTES:
+        raise HTTPException(
+            status_code=HttpResponse.REQUEST_TOO_LARGE,
+            detail="Paste content exceeds the maximum allowed size of 10MB."
+        )
 
-    paste_id = sqlite_helpers.insert_text_paste(DATABASE_FILE)
-    if paste_id is None:
-        raise HTTPException(status_code=500)
+    # 2. Generate unique alias based on content length (or hash)
+    paste_id = generate_alias(len(payload.text))
 
+    # 3. Insert into SQLite database (including the title)
+    success = sqlite_helpers.insert_paste(DATABASE_FILE, paste_id, payload.title)
+    if not success:
+        raise HTTPException(
+            status_code=HttpResponse.INTERNAL_SERVER_ERROR,
+            detail="Failed to save paste metadata."
+        )
+
+    # 4. Write content to disk
     paste_path = PASTES_DIR / str(paste_id)
-    paste_path.write_text(text, encoding="utf-8")
+    paste_path.write_bytes(text_bytes)
 
-    return {"id": paste_id}
+    # 5. Return Pastebin-style response with URL
+    return {
+        "status": "success",
+        "id": paste_id,
+        "url": f"/paste/{paste_id}"
+    }
 
 
-@app.get("/paste/view/{paste_id}")
+@app.get("/paste/{paste_id}")
 async def view_paste(paste_id: int):
     paste_path = PASTES_DIR / str(paste_id)
     if not paste_path.exists():
@@ -216,6 +241,18 @@ async def http_exception_handler(request, exc):
         content = content.format(
             requested_url=str(original_url),
             base_url=str(base_url)
+        )
+    if status_code_enum == HttpResponse.REQUEST_TOO_LARGE:
+        request_size = "Unknown"
+        try:
+            body = await request.json()
+            if isinstance(body, dict) and "text" in body:
+                request_size = len(body["text"].encode("utf-8"))
+        except Exception:
+            pass
+        content = content.format(
+            request_size=request_size,
+            max_size=MAX_PASTE_SIZE_BYTES,
         )
     return HTMLResponse(
         content=content, status_code=status_code_enum.code
