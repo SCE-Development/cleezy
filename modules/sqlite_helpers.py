@@ -35,9 +35,9 @@ def maybe_create_table(sqlite_file: str) -> bool:
         CREATE UNIQUE INDEX IF NOT EXISTS idx_urls_alias
         ON urls (alias);
         """
+        cursor.execute(create_pastes_table_query)
         cursor.execute(create_table_query)
         cursor.execute(create_index_query)
-        cursor.execute(create_pastes_table_query)
 
         db.commit()
         return True
