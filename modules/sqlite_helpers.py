@@ -202,7 +202,7 @@ def insert_paste(sqlite_file: str, paste_id: str, title: str):
     cursor = db.cursor()
 
     try:
-        sql = "INSERT INTO pastes(paste_id, title) VALUES (?, ?)"
+        sql = "INSERT INTO pastes(id, title) VALUES (?, ?)"
         val = (paste_id, title)
         cursor.execute(sql, val)
         db.commit()

@@ -68,4 +68,9 @@ def get_args():
         default="America/Los_Angeles",
         help="the timezone that url expiration checks will use. defaults to America/Los_Angeles"
     )
+    parser.add_argument(
+        "--paste-directory",
+        default="/app/pastes",
+        help="the timezone that url expiration checks will use. defaults to America/Los_Angeles"
+    )
     return parser.parse_args()

@@ -21,13 +21,16 @@ from modules.qr_code import QRCode
 from pathlib import Path
 import os
 
-PASTES_DIR = Path("pastes")
-PASTES_DIR.mkdir(exist_ok=True)
+CLEEZY_PASTE_API_KEY = os.getenv("CLEEZY_PASTE_API_KEY")
 
 MAX_PASTE_SIZE_BYTES = 10 * 1024 * 1024
 
 app = FastAPI()
 args = get_args()
+
+PASTES_DIR = Path(args.paste_directory)
+PASTES_DIR.mkdir(exist_ok=True)
+
 alias_queue = Queue()
 
 app.add_middleware(
@@ -165,7 +168,13 @@ async def delete_url(alias: str):
 
 @app.post("/paste/create")
 async def create_paste(request: Request):
-    # 1. Enforce size limit (using UTF-8 byte length)
+    api_key = request.headers.get("x-api-key")
+
+    if CLEEZY_PASTE_API_KEY is None:
+        logging.warning("CLEEZY_PASTE_API_KEY isn't set, skipping api key check")
+    elif api_key != CLEEZY_PASTE_API_KEY:
+        raise HTTPException(status_code=401, detail=f"Invalid API Key '{api_key}'")
+
     try:
         payload = await request.json()
     except Exception:
@@ -181,22 +190,18 @@ async def create_paste(request: Request):
             detail="Paste content exceeds the maximum allowed size of 10MB."
         )
 
-    # 2. Generate unique alias based on content length (or hash)
-    paste_id = generate_alias(len(payload.text))
+    paste_id = generate_alias(len(payload.get('text')))
 
-    # 3. Insert into SQLite database (including the title)
-    success = sqlite_helpers.insert_paste(DATABASE_FILE, paste_id, payload.title)
+    success = sqlite_helpers.insert_paste(DATABASE_FILE, paste_id, payload.get('title', 'Untitled Paste'))
     if not success:
         raise HTTPException(
             status_code=HttpResponse.INTERNAL_SERVER_ERROR,
             detail="Failed to save paste metadata."
         )
 
-    # 4. Write content to disk
     paste_path = PASTES_DIR / str(paste_id)
     paste_path.write_bytes(text_bytes)
 
-    # 5. Return Pastebin-style response with URL
     return {
         "status": "success",
         "id": paste_id,
@@ -205,8 +210,8 @@ async def create_paste(request: Request):
 
 
 @app.get("/paste/{paste_id}")
-async def view_paste(paste_id: int):
-    paste_path = PASTES_DIR / str(paste_id)
+async def view_paste(paste_id: str):
+    paste_path = PASTES_DIR / paste_id
     if not paste_path.exists():
         raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
     return PlainTextResponse(paste_path.read_text(encoding="utf-8"))
