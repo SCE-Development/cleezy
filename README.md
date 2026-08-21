@@ -18,6 +18,11 @@ sce run z
 ```
 - [ ] ensure the server is running locally at `http://localhost:8000`
 
+if youre running cleezy on sce.sjsu.edu, make an .env file like
+```
+CLEEZY_PASTE_API_KEY=NOTHING_REALLY
+```
+
 ## APIs
 ### To add URL
 send HTTP POST request to http://localhost:8000/create_url with body
@@ -37,6 +42,24 @@ Open http://localhost:8000/list in the browser
 - send HTTP POST request to http://localhost:8000/delete/myurl
 - verify the url was deleted by opening http://localhost:8000/list in the browser
 
+### To create a paste
+if you didnt make an env file like above, no need to pass in api key
+```sh
+curl -X POST "http://localhost:8000/paste/create" \
+     -H "Content-Type: application/json" \
+     -H "X-API-Key: your_secret_key_here" \
+     -d '{"title": "My First Paste", "text": "hello2"}'
+
+# example response is
+# {"status":"success","id":"6556e","url":"/paste/6556e"}
+```
+
+### To view a paste
+```sh
+# put the paste id after the `/paste/` in the url, like below
+curl http://localhost:8000/paste/6556e
+```
+
 ## SQLite Migrations
 If you have an existing database and want to add a column, see below
 ```sh
@@ -50,20 +73,3 @@ apt install -y sqlite3
 ALTER TABLE urls
 ADD COLUMN expires_at DATETIME DEFAULT NULL;
 ```
-## QR Embeds
-### tl;dr THEY DON'T WORK ON DISCORD
-
-here's the discord embed debugger that tries to scrape embed stuff from the url it is provided. 'internal error' means discord wasn't able to do this
-
-<img width="394" height="400" alt="image" src="https://github.com/user-attachments/assets/adc83ef3-7d06-458b-8cc8-3569023559a6" />
-
-here's some logs from cleezy-nginx after the embed debugger was run and a twitter post with the QR url was sent 
-```
-172.25.0.14 - - [01/Sep/2025:19:03:43 +0000] "GET /qr/EMBEDTEST1 HTTP/1.0" 404 185 "-" "Twitterbot/1.0"
-172.25.0.14 - - [01/Sep/2025:19:03:43 +0000] "GET /qr/EMBEDTEST1 HTTP/1.0" 404 185 "-" "Twitterbot/1.0"
-```
-as you can see, only twitter was able to connect to the site and scrape, display embed stuff
-
-<img width="695" height="391" alt="image" src="https://github.com/user-attachments/assets/1369dd42-09fa-4dda-9d0c-def44dbf3a0d" />
-
-ATP, the source of the issue is not very apparent

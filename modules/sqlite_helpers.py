@@ -38,6 +38,7 @@ def maybe_create_table(sqlite_file: str) -> bool:
         cursor.execute(create_pastes_table_query)
         cursor.execute(create_table_query)
         cursor.execute(create_index_query)
+
         db.commit()
         return True
     except Exception:
@@ -192,6 +193,25 @@ def increment_used_column(sqlite_file, alias: str, count=1):
     except Exception:
         logger.exception(f"Couldn't update the used column for alias {alias}: ")
         db.rollback()
+    finally:
+        cursor.close()
+        db.close()
+
+def insert_paste(sqlite_file: str, paste_id: str, title: str):
+    db = sqlite3.connect(sqlite_file)
+    cursor = db.cursor()
+
+    try:
+        sql = "INSERT INTO pastes(id, title) VALUES (?, ?)"
+        val = (paste_id, title)
+        cursor.execute(sql, val)
+        db.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+    except Exception:
+        logger.exception("Inserting paste had an error")
+        return False
     finally:
         cursor.close()
         db.close()

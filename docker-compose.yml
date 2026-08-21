@@ -11,12 +11,16 @@ services:
       - --qr-code-cache-state-file=/tmp/cleezy-state
       - --qr-code-base-url=https://sce.sjsu.edu/s
       - --qr-code-center-image-path=/app/assets/SCE_logo.png
+      - --paste-directory=/app/pastes
       - -vvv
     volumes:
       - cleezy_data:/tmp/
       - ./server.py:/app/server.py
       - ./modules:/app/modules
       - ./assets:/app/assets
+      - ./pastes:/app/pastes
+    env_file:
+      - .env
 
 volumes:
   cleezy_data:

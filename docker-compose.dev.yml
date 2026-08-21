@@ -12,6 +12,7 @@ services:
       - --qr-code-base-url=http://localhost:8000/find
       - --port=8000
       - --qr-code-center-image-path=/app/assets/SCE_logo.png
+      - --paste-directory=/app/pastes
       - -vvv
     ports:
       - 8000:8000
@@ -20,6 +21,7 @@ services:
       - ./server.py:/app/server.py
       - ./modules:/app/modules
       - ./assets:/app/assets
+      - ./pastes:/app/pastes
     environment:
       - WATCHFILES_FORCE_POLLING=true
 

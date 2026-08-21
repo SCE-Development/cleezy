@@ -8,12 +8,19 @@ NOT_FOUND_HTML = """
 <p>Return to <a href="{base_url}">homepage</a></p>
 """
 
+REQUEST_TOO_LARGE_HTML = """
+<h1>Request too large.</h1>
+
+<p>The bytes sent was size "{request_size}" which exceeds max size of {max_size}.</p>
+"""
+
 class HttpResponse(enum.Enum):
   
   OK = (200, "success")
   BAD_REQUEST = (400, "<h1>No URL was found in your request</h1>")
   NOT_FOUND = (404, NOT_FOUND_HTML)
   CONFLICT = (409, "<h1>Alias already exists</h1>")
+  REQUEST_TOO_LARGE = (413, REQUEST_TOO_LARGE_HTML)
   INVALID_ARGUMENT_EXCEPTION = (422, "<h1>Alias is invalid</h1>")
   INTERNAL_SERVER_ERROR = (500, "<h1>Internal server error</h1>")
   def __init__(self, code, content):
@@ -25,6 +32,7 @@ http_code_to_enum = {
   400: HttpResponse.BAD_REQUEST,
   404: HttpResponse.NOT_FOUND,
   409: HttpResponse.CONFLICT,
+  413: HttpResponse.REQUEST_TOO_LARGE,
   422: HttpResponse.INVALID_ARGUMENT_EXCEPTION,
   500: HttpResponse.INTERNAL_SERVER_ERROR,
 }

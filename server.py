@@ -1,6 +1,6 @@
 from typing import Optional
 from fastapi import FastAPI, Request, HTTPException, Response
-from fastapi.responses import RedirectResponse, HTMLResponse, FileResponse
+from fastapi.responses import RedirectResponse, HTMLResponse, FileResponse, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import time
@@ -18,9 +18,19 @@ from modules.sqlite_helpers import increment_used_column
 from modules.cache import Cache
 from modules.qr_code import QRCode
 
+from pathlib import Path
+import os
+
+CLEEZY_PASTE_API_KEY = os.getenv("CLEEZY_PASTE_API_KEY")
+
+MAX_PASTE_SIZE_BYTES = 10 * 1024 * 1024
 
 app = FastAPI()
 args = get_args()
+
+PASTES_DIR = Path(args.paste_directory)
+PASTES_DIR.mkdir(exist_ok=True)
+
 alias_queue = Queue()
 
 app.add_middleware(
@@ -156,6 +166,56 @@ async def delete_url(alias: str):
         else:
             raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
 
+@app.post("/paste/create")
+async def create_paste(request: Request):
+    api_key = request.headers.get("x-api-key")
+
+    if CLEEZY_PASTE_API_KEY is None:
+        logging.warning("CLEEZY_PASTE_API_KEY isn't set, skipping api key check")
+    elif api_key != CLEEZY_PASTE_API_KEY:
+        raise HTTPException(status_code=401, detail=f"Invalid API Key '{api_key}'")
+
+    try:
+        payload = await request.json()
+    except Exception:
+        logging.exception("/paste/create couldnt parse json")
+        raise HTTPException(
+            status_code=HttpResponse.BAD_REQUEST.code,
+            detail="Invalid JSON payload"
+        )
+    text_bytes = payload.get("text", "").encode("utf-8")
+    if len(text_bytes) > MAX_PASTE_SIZE_BYTES:
+        raise HTTPException(
+            status_code=HttpResponse.REQUEST_TOO_LARGE,
+            detail="Paste content exceeds the maximum allowed size of 10MB."
+        )
+
+    paste_id = generate_alias(len(payload.get('text')))
+
+    success = sqlite_helpers.insert_paste(DATABASE_FILE, paste_id, payload.get('title', 'Untitled Paste'))
+    if not success:
+        raise HTTPException(
+            status_code=HttpResponse.INTERNAL_SERVER_ERROR,
+            detail="Failed to save paste metadata."
+        )
+
+    paste_path = PASTES_DIR / str(paste_id)
+    paste_path.write_bytes(text_bytes)
+
+    return {
+        "status": "success",
+        "id": paste_id,
+        "url": f"/paste/{paste_id}"
+    }
+
+
+@app.get("/paste/{paste_id}")
+async def view_paste(paste_id: str):
+    paste_path = PASTES_DIR / paste_id
+    if not paste_path.exists():
+        raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
+    return PlainTextResponse(paste_path.read_text(encoding="utf-8"))
+
 @app.get("/qr/{alias}") 
 async def qr(alias: str):
     logging.debug(f"/qr code generation called with alias: {alias}")
@@ -178,6 +238,11 @@ async def qr(alias: str):
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
+    if exc.status_code not in http_code_to_enum:
+        return HTMLResponse(
+            status_code=exc.status_code,
+            content=exc.detail,
+        )
     status_code_enum = http_code_to_enum[exc.status_code]
     content = status_code_enum.content
     if status_code_enum == HttpResponse.NOT_FOUND:
@@ -186,6 +251,18 @@ async def http_exception_handler(request, exc):
         content = content.format(
             requested_url=str(original_url),
             base_url=str(base_url)
+        )
+    if status_code_enum == HttpResponse.REQUEST_TOO_LARGE:
+        request_size = "Unknown"
+        try:
+            body = await request.json()
+            if isinstance(body, dict) and "text" in body:
+                request_size = len(body["text"].encode("utf-8"))
+        except Exception:
+            pass
+        content = content.format(
+            request_size=request_size,
+            max_size=MAX_PASTE_SIZE_BYTES,
         )
     return HTMLResponse(
         content=content, status_code=status_code_enum.code
