@@ -240,7 +240,8 @@ async def qr(alias: str):
 async def http_exception_handler(request, exc):
     if exc.status_code not in http_code_to_enum:
         return HTMLResponse(
-            status_code=exc.status_code
+            status_code=exc.status_code,
+            content=exc.detail,
         )
     status_code_enum = http_code_to_enum[exc.status_code]
     content = status_code_enum.content
