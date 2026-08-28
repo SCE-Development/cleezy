@@ -213,7 +213,18 @@ async def view_paste(paste_id: str):
     paste_path = PASTES_DIR / paste_id
     if not paste_path.exists():
         raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
-    return PlainTextResponse(paste_path.read_text(encoding="utf-8"))
+    paste_title = sqlite_helpers.get_paste(DATABASE_FILE, paste_id)
+
+    return HTMLResponse(
+    f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>{paste_title}</title>
+</head>
+<body>
+<pre>{paste_path.read_text(encoding="utf-8")}</pre>
+</body>
+</html>""")
 
 @app.get("/qr/{alias}") 
 async def qr(alias: str):

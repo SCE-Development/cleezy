@@ -51,12 +51,13 @@ curl -X POST "http://localhost:8000/paste/create" \
      -d '{"title": "My First Paste", "text": "hello2"}'
 
 # example response is
-# {"status":"success","id":"6556e","url":"/paste/6556e"}
+# {"id":"6556e","size_bytes":6}
 ```
 
 ### To view a paste
 ```sh
 # put the paste id after the `/paste/` in the url, like below
+# you can also open the url in the browser
 curl http://localhost:8000/paste/6556e
 ```
 
