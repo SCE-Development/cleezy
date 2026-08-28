@@ -171,7 +171,7 @@ async def create_paste(request: Request):
     api_key = request.headers.get("x-api-key")
 
     if CLEEZY_PASTE_API_KEY is None:
-        logging.warning("CLEEZY_PASTE_API_KEY isn't set, skipping api key check")
+        logging.warning("CLEEZY_PASTE_API_KEY isn't set, skipping api key check for /paste/create")
     elif api_key != CLEEZY_PASTE_API_KEY:
         raise HTTPException(status_code=401, detail=f"Invalid API Key '{api_key}'")
 
@@ -203,9 +203,8 @@ async def create_paste(request: Request):
     paste_path.write_bytes(text_bytes)
 
     return {
-        "status": "success",
         "id": paste_id,
-        "url": f"/paste/{paste_id}"
+        "size_bytes": len(text_bytes)
     }
 
 
@@ -214,7 +213,18 @@ async def view_paste(paste_id: str):
     paste_path = PASTES_DIR / paste_id
     if not paste_path.exists():
         raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
-    return PlainTextResponse(paste_path.read_text(encoding="utf-8"))
+    paste_title = sqlite_helpers.get_paste(DATABASE_FILE, paste_id)
+
+    return HTMLResponse(
+    f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>{paste_title}</title>
+</head>
+<body>
+<pre>{paste_path.read_text(encoding="utf-8")}</pre>
+</body>
+</html>""")
 
 @app.get("/qr/{alias}") 
 async def qr(alias: str):

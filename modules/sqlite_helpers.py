@@ -215,3 +215,16 @@ def insert_paste(sqlite_file: str, paste_id: str, title: str):
     finally:
         cursor.close()
         db.close()
+
+
+def get_paste(sqlite_file: str, paste_id: str):
+    db = sqlite3.connect(sqlite_file)
+    cursor = db.cursor()
+    try:
+        sql = "SELECT title FROM pastes WHERE id = ?"
+        cursor.execute(sql, (paste_id,))
+        result = cursor.fetchone()
+        return result[0]
+    except Exception:
+        logger.exception(f"Getting paste {paste_id} had an error")
+        return None
