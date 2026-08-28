@@ -1,6 +1,11 @@
 from typing import Optional
 from fastapi import FastAPI, Request, HTTPException, Response
-from fastapi.responses import RedirectResponse, HTMLResponse, FileResponse, PlainTextResponse
+from fastapi.responses import (
+    RedirectResponse,
+    HTMLResponse,
+    FileResponse,
+    PlainTextResponse,
+)
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import time
@@ -46,11 +51,11 @@ cache = Cache(args.cache_size)
 DATABASE_FILE = args.database_file_path
 sqlite_helpers.maybe_create_table(DATABASE_FILE)
 qr_code_cache = QRCode(
-  base_url=args.qr_code_base_url,
-  qr_cache_path=args.qr_code_cache_path,
-  max_size=args.qr_code_cache_size,
-  cache_state_file=args.qr_code_cache_state_file,
-  qr_image_path=args.qr_code_center_image_path,
+    base_url=args.qr_code_base_url,
+    qr_cache_path=args.qr_code_cache_path,
+    max_size=args.qr_code_cache_size,
+    cache_state_file=args.qr_code_cache_state_file,
+    qr_image_path=args.qr_code_center_image_path,
 )
 
 
@@ -166,12 +171,15 @@ async def delete_url(alias: str):
         else:
             raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
 
+
 @app.post("/paste/create")
 async def create_paste(request: Request):
     api_key = request.headers.get("x-api-key")
 
     if CLEEZY_PASTE_API_KEY is None:
-        logging.warning("CLEEZY_PASTE_API_KEY isn't set, skipping api key check for /paste/create")
+        logging.warning(
+            "CLEEZY_PASTE_API_KEY isn't set, skipping api key check for /paste/create"
+        )
     elif api_key != CLEEZY_PASTE_API_KEY:
         raise HTTPException(status_code=401, detail=f"Invalid API Key '{api_key}'")
 
@@ -180,32 +188,30 @@ async def create_paste(request: Request):
     except Exception:
         logging.exception("/paste/create couldnt parse json")
         raise HTTPException(
-            status_code=HttpResponse.BAD_REQUEST.code,
-            detail="Invalid JSON payload"
+            status_code=HttpResponse.BAD_REQUEST.code, detail="Invalid JSON payload"
         )
     text_bytes = payload.get("text", "").encode("utf-8")
     if len(text_bytes) > MAX_PASTE_SIZE_BYTES:
         raise HTTPException(
             status_code=HttpResponse.REQUEST_TOO_LARGE,
-            detail="Paste content exceeds the maximum allowed size of 10MB."
+            detail="Paste content exceeds the maximum allowed size of 10MB.",
         )
 
-    paste_id = generate_alias(len(payload.get('text')))
+    paste_id = generate_alias(len(payload.get("text")))
 
-    success = sqlite_helpers.insert_paste(DATABASE_FILE, paste_id, payload.get('title', 'Untitled Paste'))
+    success = sqlite_helpers.insert_paste(
+        DATABASE_FILE, paste_id, payload.get("title", "Untitled Paste")
+    )
     if not success:
         raise HTTPException(
             status_code=HttpResponse.INTERNAL_SERVER_ERROR,
-            detail="Failed to save paste metadata."
+            detail="Failed to save paste metadata.",
         )
 
     paste_path = PASTES_DIR / str(paste_id)
     paste_path.write_bytes(text_bytes)
 
-    return {
-        "id": paste_id,
-        "size_bytes": len(text_bytes)
-    }
+    return {"id": paste_id, "size_bytes": len(text_bytes)}
 
 
 @app.get("/paste/{paste_id}")
@@ -216,7 +222,7 @@ async def view_paste(paste_id: str):
     paste_title = sqlite_helpers.get_paste(DATABASE_FILE, paste_id)
 
     return HTMLResponse(
-    f"""<!DOCTYPE html>
+        f"""<!DOCTYPE html>
 <html>
 <head>
     <title>{paste_title}</title>
@@ -224,27 +230,30 @@ async def view_paste(paste_id: str):
 <body>
 <pre>{paste_path.read_text(encoding="utf-8")}</pre>
 </body>
-</html>""")
+</html>"""
+    )
 
-@app.get("/qr/{alias}") 
+
+@app.get("/qr/{alias}")
 async def qr(alias: str):
     logging.debug(f"/qr code generation called with alias: {alias}")
     with MetricsHandler.query_time.labels("qr").time():
         maybe_image_data = qr_code_cache.find(alias)
         if maybe_image_data is not None:
             return FileResponse(
-            maybe_image_data,
-            media_type='image/jpeg',
+                maybe_image_data,
+                media_type="image/jpeg",
             )
-        
+
         url_output = sqlite_helpers.get_url(DATABASE_FILE, alias)
         if url_output is None:
             raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
         image_data = qr_code_cache.add(alias)
         return FileResponse(
             image_data,
-            media_type='image/jpeg',
+            media_type="image/jpeg",
         )
+
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
@@ -259,8 +268,7 @@ async def http_exception_handler(request, exc):
         original_url = request.headers.get("x-original-url", request.url)
         base_url = request.headers.get("x-base-url", request.base_url)
         content = content.format(
-            requested_url=str(original_url),
-            base_url=str(base_url)
+            requested_url=str(original_url), base_url=str(base_url)
         )
     if status_code_enum == HttpResponse.REQUEST_TOO_LARGE:
         request_size = "Unknown"
@@ -274,9 +282,7 @@ async def http_exception_handler(request, exc):
             request_size=request_size,
             max_size=MAX_PASTE_SIZE_BYTES,
         )
-    return HTMLResponse(
-        content=content, status_code=status_code_enum.code
-    )
+    return HTMLResponse(content=content, status_code=status_code_enum.code)
 
 
 @app.get("/metrics")
@@ -286,13 +292,15 @@ def get_metrics():
         content=prometheus_client.generate_latest(),
     )
 
+
 # write qr-codes to json file on shutdown if cache state file arg is specified
 @app.on_event("shutdown")
 def signal_handler():
     if args.qr_code_cache_state_file is None:
         return qr_code_cache.clear()
-    
+
     qr_code_cache.write_cache_state()
+
 
 logging.Formatter.converter = time.gmtime
 
