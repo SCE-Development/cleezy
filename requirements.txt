@@ -6,5 +6,3 @@ py-grpc-prometheus==0.7.0
 pyqrcode==1.2.1
 pypng==0.20220715.0
 pillow==10.2.0
-python-multipart==0.0.9
-httpx==0.24.1
