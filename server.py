@@ -171,7 +171,7 @@ async def create_paste(request: Request):
     api_key = request.headers.get("x-api-key")
 
     if CLEEZY_PASTE_API_KEY is None:
-        logging.warning("CLEEZY_PASTE_API_KEY isn't set, skipping api key check")
+        logging.warning("CLEEZY_PASTE_API_KEY isn't set, skipping api key check for /paste/create")
     elif api_key != CLEEZY_PASTE_API_KEY:
         raise HTTPException(status_code=401, detail=f"Invalid API Key '{api_key}'")
 
@@ -203,9 +203,8 @@ async def create_paste(request: Request):
     paste_path.write_bytes(text_bytes)
 
     return {
-        "status": "success",
         "id": paste_id,
-        "url": f"/paste/{paste_id}"
+        "size_bytes": len(text_bytes)
     }
 
 

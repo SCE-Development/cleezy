@@ -45,6 +45,7 @@ def maybe_create_table(sqlite_file: str) -> bool:
         logger.exception("Unable to create urls table")
         return False
 
+
 def insert_url(sqlite_file: str, url: str, alias: str, expiration_date: typing.Union[str, None] = None):
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()
