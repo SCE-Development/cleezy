@@ -215,11 +215,17 @@ async def create_paste(request: Request):
 
 
 @app.get("/paste/{paste_id}")
-async def view_paste(paste_id: str):
+async def view_paste(paste_id: str, request: Request):
     # sqlite is the source of truth for whether a paste exists
     if not sqlite_helpers.paste_exists(DATABASE_FILE, paste_id):
         raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
     paste_path = PASTES_DIR / paste_id
+    paste_text = paste_path.read_text(encoding="utf-8")
+
+    # /paste/<id>?raw returns the paste as plaintext instead of html
+    if "raw" in request.query_params:
+        return PlainTextResponse(paste_text)
+
     paste_title = sqlite_helpers.get_paste(DATABASE_FILE, paste_id)
 
     return HTMLResponse(
@@ -229,7 +235,7 @@ async def view_paste(paste_id: str):
     <title>{paste_title}</title>
 </head>
 <body>
-<pre>{paste_path.read_text(encoding="utf-8")}</pre>
+<pre>{paste_text}</pre>
 </body>
 </html>"""
     )

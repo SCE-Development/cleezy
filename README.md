@@ -59,6 +59,9 @@ curl -X POST "http://localhost:8000/paste/create" \
 # put the paste id after the `/paste/` in the url, like below
 # you can also open the url in the browser
 curl http://localhost:8000/paste/6556e
+
+# add `?raw` to get the paste back as plaintext instead of html
+curl "http://localhost:8000/paste/6556e?raw"
 ```
 
 ## SQLite Migrations
