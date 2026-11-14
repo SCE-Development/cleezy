@@ -214,6 +214,20 @@ class TestDatabaseSetup(unittest.TestCase):
             [used] = cursor.fetchone()
             self.assertEqual(used, 22)
 
+    def test_paste_exists(self):
+        with tempfile.NamedTemporaryFile() as tmp:
+            sqlite_helpers.maybe_create_table(tmp.name)
+            self.assertFalse(sqlite_helpers.paste_exists(tmp.name, "abc12"))
+
+            sqlite_helpers.insert_paste(tmp.name, "abc12", "My First Paste")
+            self.assertTrue(sqlite_helpers.paste_exists(tmp.name, "abc12"))
+            self.assertFalse(sqlite_helpers.paste_exists(tmp.name, "not_real"))
+
+    def test_paste_exists_handles_exception(self):
+        # the pastes table was never created, so the query raises
+        with tempfile.NamedTemporaryFile() as tmp:
+            self.assertFalse(sqlite_helpers.paste_exists(tmp.name, "abc12"))
+
 
 if __name__ == "__main__":
     unittest.main()

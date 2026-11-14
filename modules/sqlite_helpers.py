@@ -217,6 +217,20 @@ def insert_paste(sqlite_file: str, paste_id: str, title: str):
         db.close()
 
 
+def paste_exists(sqlite_file: str, paste_id: str) -> bool:
+    db = sqlite3.connect(sqlite_file)
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT id FROM pastes WHERE id = ?", (paste_id,))
+        return cursor.fetchone() is not None
+    except Exception:
+        logger.exception(f"Checking if paste {paste_id} exists had an error")
+        return False
+    finally:
+        cursor.close()
+        db.close()
+
+
 def get_paste(sqlite_file: str, paste_id: str):
     db = sqlite3.connect(sqlite_file)
     cursor = db.cursor()

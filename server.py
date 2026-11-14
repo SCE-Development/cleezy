@@ -216,9 +216,10 @@ async def create_paste(request: Request):
 
 @app.get("/paste/{paste_id}")
 async def view_paste(paste_id: str):
-    paste_path = PASTES_DIR / paste_id
-    if not paste_path.exists():
+    # sqlite is the source of truth for whether a paste exists
+    if not sqlite_helpers.paste_exists(DATABASE_FILE, paste_id):
         raise HTTPException(status_code=HttpResponse.NOT_FOUND.code)
+    paste_path = PASTES_DIR / paste_id
     paste_title = sqlite_helpers.get_paste(DATABASE_FILE, paste_id)
 
     return HTMLResponse(
